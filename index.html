@@ -316,6 +316,12 @@
         </div>
 
         <div class="group">
+          <button id="logCameraBtn" class="tool-btn" type="button">
+            Log Camera
+          </button>
+        </div>
+
+        <div class="group">
           <div class="file-slot">
             <span class="file-slot-label">Inner</span>
             <label class="file-input-wrapper">
@@ -374,6 +380,7 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
+      const logCameraBtn = document.getElementById("logCameraBtn");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -686,11 +693,11 @@
             console.warn("video play() threw", video.src, e);
           }
 
-          // mattes Projektions-Material
+          // leicht leuchtender, aber noch matter Screen
           entry.mat.map = tex;
           entry.mat.emissiveMap = null;
-          entry.mat.emissive = new THREE.Color(0x000000);
-          entry.mat.emissiveIntensity = 0.0;
+          entry.mat.emissive = new THREE.Color(0xffffff);
+          entry.mat.emissiveIntensity = 0.15;
           entry.mat.roughness = 0.5;
           entry.mat.metalness = 0.0;
           entry.mat.needsUpdate = true;
@@ -973,6 +980,17 @@
 
       sweetspotBtn.addEventListener("click", () => {
         goToSweetspot();
+      });
+
+      logCameraBtn.addEventListener("click", () => {
+        const p = camera.position;
+        const t = controls.target;
+        console.log(
+          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
+        );
+        console.log(
+          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
+        );
       });
 
       function animate() {
