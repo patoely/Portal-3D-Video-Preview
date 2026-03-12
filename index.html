@@ -449,7 +449,6 @@
       controls.enableDamping = true;
 
       function goToSweetspot() {
-        console.log("goToSweetspot()");
         camera.position.set(
           878.3323942469066,
           132.8253707911402,
@@ -514,7 +513,6 @@
       const loadingManager = new THREE.LoadingManager();
 
       loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
-        console.log("Loading started", url, itemsLoaded, "/", itemsTotal);
         loadingStatus.textContent = "Lade Assets…";
         loadingOverlay.classList.remove("hidden");
       };
@@ -538,7 +536,6 @@
         ) {
           const filename = url.split("/").pop();
           const mapped = "models/" + filename;
-          console.log("URLModifier", url, "→", mapped);
           return mapped;
         }
         return url;
@@ -555,23 +552,6 @@
       const floorMaterials = [];
 
       function setupModel(root) {
-        console.log("setupModel(root) – dumping mesh/material names");
-
-        // Debug-Dump aller Mesh- und Materialnamen
-        root.traverse((child) => {
-          if (!child.isMesh || !child.material) return;
-          const mats = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
-
-          const childName = child.name || "(no mesh name)";
-          for (const mat of mats) {
-            const matName = (mat && mat.name) || "(no material name)";
-            console.log("MESH:", childName, "→ MAT:", matName);
-          }
-        });
-
-        // Bisherige setupModel-Logik
         root.traverse((child) => {
           if (!child.isMesh) return;
 
@@ -602,17 +582,17 @@
             const meshName = (child.name || "").toLowerCase();
 
             if (
-              name.includes("portal_inside_specs") ||
+              name.startsWith("portal_inside_specs") ||
               meshName.includes("portal_inside_specs")
             ) {
               innerMaterials.push(mat);
             } else if (
-              name.includes("portal_outside_specs") ||
+              name.startsWith("portal_outside_specs") ||
               meshName.includes("portal_outside_specs")
             ) {
               outerMaterials.push(mat);
             } else if (
-              name.includes("portal_floor_specs") ||
+              name.startsWith("portal_floor_specs") ||
               meshName.includes("portal_floor_specs")
             ) {
               floorMaterials.push(mat);
@@ -705,14 +685,12 @@
 
       function stopSyncMonitor() {
         if (syncIntervalId !== null) {
-          console.log("stopSyncMonitor()");
           clearInterval(syncIntervalId);
           syncIntervalId = null;
         }
       }
 
       function stopAndDisposeVideos() {
-        console.log("stopAndDisposeVideos()", activeVideoEntries.length);
         for (const entry of activeVideoEntries) {
           if (!entry || !entry.videoTexture) continue;
           const video = entry.video;
@@ -720,9 +698,7 @@
             video.pause();
             video.removeAttribute("src");
             video.load();
-          } catch (e) {
-            console.warn("Error stopping video", e);
-          }
+          } catch (e) {}
           entry.videoTexture.dispose();
         }
         activeVideoEntries = [];
@@ -736,7 +712,6 @@
         );
         if (videos.length === 0) return;
 
-        console.log("startSyncMonitor() videos:", videos.length);
         syncIntervalId = window.setInterval(() => {
           const ref = videos[0];
           const refTime = ref.currentTime;
@@ -747,9 +722,7 @@
             if (delta > 0.08) {
               try {
                 v.currentTime = refTime;
-              } catch (e) {
-                console.warn("Sync currentTime failed", e);
-              }
+              } catch (e) {}
             }
           }
         }, 250);
@@ -774,11 +747,6 @@
           events.forEach((ev) => video.addEventListener(ev, onReady));
 
           const timeout = window.setTimeout(() => {
-            console.warn(
-              "waitForVideoReady timeout",
-              isUser ? "user" : "project",
-              video.src
-            );
             cleanup();
             resolve();
           }, isUser ? 200 : 1000);
@@ -793,11 +761,6 @@
       }
 
       async function activateVideoEntries(pendingEntries) {
-        console.log(
-          "activateVideoEntries() with",
-          pendingEntries.length,
-          "entries"
-        );
         if (!pendingEntries.length) return;
 
         const uniqueVideos = [];
@@ -812,8 +775,6 @@
           isUserFlags.push(entry.isUser);
         }
 
-        console.log("uniqueVideos:", uniqueVideos.length);
-
         await Promise.all(
           uniqueVideos.map((v, i) =>
             waitForVideoReady(v, isUserFlags[i])
@@ -823,9 +784,7 @@
         for (const v of uniqueVideos) {
           try {
             v.currentTime = 0;
-          } catch (e) {
-            console.warn("set currentTime failed", e);
-          }
+          } catch (e) {}
         }
 
         for (const entry of pendingEntries) {
@@ -835,9 +794,7 @@
 
         await Promise.all(
           uniqueVideos.map((v) =>
-            v.play().catch((err) => {
-              console.warn("Video play() failed", v.src, err);
-            })
+            v.play().catch(() => {})
           )
         );
 
@@ -846,10 +803,9 @@
         startSyncMonitor();
       }
 
-      // Apply Preview (User-Videos) via Materialnamen
+      // Apply Preview (User-Videos) via Material-Prefix
       async function switchToUserVideos() {
         if (!model) return;
-        console.log("switchToUserVideos()");
 
         stopSyncMonitor();
         stopAndDisposeVideos();
@@ -859,7 +815,6 @@
           (userVideos.outer && userVideos.outer.video) ||
           (userVideos.floor && userVideos.floor.video);
 
-        console.log("hasAnyUserVideo:", !!hasAnyUserVideo);
         if (!hasAnyUserVideo) {
           updateButtonsForSpecsMode();
           return;
@@ -878,7 +833,7 @@
 
             if (
               userVideos.inner.video &&
-              matName.includes("portal_inside_specs")
+              matName.startsWith("portal_inside_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -888,7 +843,7 @@
               });
             } else if (
               userVideos.outer.video &&
-              matName.includes("portal_outside_specs")
+              matName.startsWith("portal_outside_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -898,7 +853,7 @@
               });
             } else if (
               userVideos.floor.video &&
-              matName.includes("portal_floor_specs")
+              matName.startsWith("portal_floor_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -925,10 +880,9 @@
         updateButtonsForUserMode();
       }
 
-      // Example Video (Projektvideos) via Materialnamen
+      // Example Video (Projektvideos) via Material-Prefix
       async function switchToProjectVideos() {
         if (!model) return;
-        console.log("switchToProjectVideos() – Example Video clicked");
 
         stopSyncMonitor();
         stopAndDisposeVideos();
@@ -945,18 +899,17 @@
             const matName = (mat.name || "").toLowerCase();
             let baseName = null;
 
-            if (matName.includes("portal_inside_specs")) {
+            if (matName.startsWith("portal_inside_specs")) {
               baseName = "Portal_Inside_Specs";
-            } else if (matName.includes("portal_outside_specs")) {
+            } else if (matName.startsWith("portal_outside_specs")) {
               baseName = "Portal_Outside_Specs";
-            } else if (matName.includes("portal_floor_specs")) {
+            } else if (matName.startsWith("portal_floor_specs")) {
               baseName = "Portal_Floor_Specs";
             } else {
               continue;
             }
 
             const videoUrl = `models/${baseName}.mp4`;
-            console.log("Example mapping via mat.name", matName, "→", videoUrl);
 
             const video = document.createElement("video");
             video.loop = true;
@@ -997,7 +950,6 @@
 
       function restoreOriginalTextures() {
         if (!model) return;
-        console.log("restoreOriginalTextures()");
 
         model.traverse((child) => {
           if (!child.isMesh || !child.material) return;
@@ -1015,7 +967,6 @@
       }
 
       function switchBackToSpecs() {
-        console.log("switchBackToSpecs()");
         stopSyncMonitor();
         stopAndDisposeVideos();
         restoreOriginalTextures();
@@ -1023,43 +974,36 @@
       }
 
       function updateButtonsForSpecsMode() {
-        console.log("Buttons → Specs mode");
         specsPreviewBtn.disabled = true;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = false;
       }
 
       function updateButtonsForExampleMode() {
-        console.log("Buttons → Example mode");
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = true;
         applyPreviewBtn.disabled = false;
       }
 
       function updateButtonsForUserMode() {
-        console.log("Buttons → User mode");
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = true;
       }
 
       specsPreviewBtn.addEventListener("click", () => {
-        console.log("Specs Preview clicked");
         switchBackToSpecs();
       });
 
       exampleVideoBtn.addEventListener("click", () => {
-        console.log("Example Video button click");
         switchToProjectVideos();
       });
 
       applyPreviewBtn.addEventListener("click", () => {
-        console.log("Apply Preview clicked");
         switchToUserVideos();
       });
 
       sweetspotBtn.addEventListener("click", () => {
-        console.log("Sweetspot button click");
         goToSweetspot();
       });
 
@@ -1074,7 +1018,6 @@
       gltfLoader.load(
         "Portal_mapped.glb",
         (gltf) => {
-          console.log("GLB loaded");
           model = gltf.scene;
           setupModel(model);
           loadingOverlay.classList.add("hidden");
