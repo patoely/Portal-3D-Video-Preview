@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>3D Portal Viewer – Video Preview</title>
+    <title>3D Portal Viewer – Debug</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script type="importmap">
@@ -436,7 +436,7 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // Hellgrauer Boden (#f2f2f2)
+      // Hellgrauer Boden
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
       const floorMat = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 });
       const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
@@ -564,7 +564,6 @@
         goToSweetspot();
       }
 
-      // Video-State
       const userVideos = {
         inner: { video: null, texture: null, url: null, isUser: true },
         outer: { video: null, texture: null, url: null, isUser: true },
@@ -750,9 +749,29 @@
         );
         isUsingVideos = !!activeVideoEntries.length;
         if (isUsingVideos) startSyncMonitor();
+
+        // DEBUG: nach dem Mapping alle Materials loggen
+        console.log("DEBUG after activateVideoEntries");
+        model.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+          for (const mat of mats) {
+            if (!mat) continue;
+            const hasMap = !!mat.map;
+            console.log(
+              "MAT",
+              mat.name,
+              "hasMap:",
+              hasMap,
+              "mapType:",
+              hasMap && mat.map.constructor.name
+            );
+          }
+        });
       }
 
-      // Apply Preview (User-Videos) via Material-Prefix
       async function switchToUserVideos() {
         if (!model) return;
 
@@ -815,7 +834,7 @@
         });
 
         console.log(
-          "pendingEntries User:",
+          "DEBUG User pendingEntries:",
           pendingEntries.length,
           pendingEntries
         );
@@ -829,7 +848,6 @@
         updateButtonsForUserMode();
       }
 
-      // Example Video (Projektvideos) via Material-Prefix
       async function switchToProjectVideos() {
         if (!model) return;
 
@@ -883,7 +901,7 @@
         });
 
         console.log(
-          "pendingEntries Example:",
+          "DEBUG Example pendingEntries:",
           pendingEntries.length,
           pendingEntries
         );
