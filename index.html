@@ -482,7 +482,7 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // Weißer Boden ohne Grid
+      // Weißer Boden
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
 
       const floorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -555,7 +555,23 @@
       const floorMaterials = [];
 
       function setupModel(root) {
-        console.log("setupModel(root)");
+        console.log("setupModel(root) – dumping mesh/material names");
+
+        // Debug-Dump aller Mesh- und Materialnamen
+        root.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+
+          const childName = child.name || "(no mesh name)";
+          for (const mat of mats) {
+            const matName = (mat && mat.name) || "(no material name)";
+            console.log("MESH:", childName, "→ MAT:", matName);
+          }
+        });
+
+        // Bisherige setupModel-Logik
         root.traverse((child) => {
           if (!child.isMesh) return;
 
