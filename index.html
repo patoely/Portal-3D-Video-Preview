@@ -404,14 +404,12 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // ca. 45° von rechts
       function goToSweetspot() {
         camera.position.set(900, 260, 900);
         controls.target.set(0, 200, 0);
         controls.update();
       }
 
-      // Himmel/Floor farblich abgestimmt
       const hemiLight = new THREE.HemisphereLight(0xb0b0b0, 0x4a4a4a, 0.9);
       hemiLight.position.set(0, 1, 0);
       scene.add(hemiLight);
@@ -943,13 +941,13 @@
         });
       }
 
-      // PNG-Specs explizit setzen (nur in diesem Modus)
       function switchBackToSpecs() {
         stopSyncMonitor();
         stopAndDisposeVideos();
 
         if (!model) {
           updateButtonsForSpecsMode();
+          loadingOverlay.classList.add("hidden");
           return;
         }
 
@@ -998,6 +996,7 @@
           }
         });
 
+        loadingOverlay.classList.add("hidden");
         updateButtonsForSpecsMode();
       }
 
@@ -1050,8 +1049,8 @@
           setupModel(model);
           window.model = model;
 
-          loadingOverlay.classList.add("hidden");
-          updateButtonsForSpecsMode();
+          // direkt Specs-PNGs aktivieren
+          switchBackToSpecs();
         },
         undefined,
         (error) => {
