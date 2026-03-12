@@ -404,13 +404,10 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
+      // Neutraler Sweetspot
       function goToSweetspot() {
-        camera.position.set(
-          878.3323942469066,
-          132.8253707911402,
-          -897.8984202247887
-        );
-        controls.target.set(0, 1.2, 0);
+        camera.position.set(0, 300, 900);
+        controls.target.set(0, 200, 0);
         controls.update();
       }
 
@@ -436,9 +433,13 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // Hellgrauer Boden (#f2f2f2)
+      // Dezenter Boden
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
-      const floorMat = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 });
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0xf2f2f2,
+        roughness: 0.9,
+        metalness: 0.0
+      });
       const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
       floorMesh.rotation.x = -Math.PI / 2;
       floorMesh.position.y = -0.01;
@@ -752,7 +753,6 @@
         if (isUsingVideos) startSyncMonitor();
       }
 
-      // Apply Preview (User-Videos) via Material-Prefix
       async function switchToUserVideos() {
         if (!model) return;
 
@@ -829,7 +829,6 @@
         updateButtonsForUserMode();
       }
 
-      // Example Video (Projektvideos) via Material-Prefix
       async function switchToProjectVideos() {
         if (!model) return;
 
