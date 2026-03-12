@@ -501,6 +501,12 @@
       const floorMaterials = [];
 
       function setupModel(root) {
+        model = gltf.scene;
+setupModel(model);
+
+// global für Debug zugänglich machen
+window.model = model;
+
         root.traverse((child) => {
           if (!child.isMesh) return;
 
