@@ -63,6 +63,7 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+        align-items: center;
       }
 
       button.tool-btn {
@@ -186,6 +187,16 @@
         inset: 0;
         opacity: 0;
         cursor: pointer;
+      }
+
+      #brightnessLabel {
+        font-size: 11px;
+        color: var(--muted);
+        margin-right: 4px;
+      }
+
+      #brightnessSlider {
+        width: 120px;
       }
 
       #infoPanel {
@@ -316,9 +327,15 @@
         </div>
 
         <div class="group">
-          <button id="logCameraBtn" class="tool-btn" type="button">
-            Log Camera
-          </button>
+          <span id="brightnessLabel">Brightness</span>
+          <input
+            id="brightnessSlider"
+            type="range"
+            min="0"
+            max="50"
+            step="1"
+            value="15"
+          />
         </div>
 
         <div class="group">
@@ -356,6 +373,7 @@
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
+          <li>Brightness: Leichte Screen‑Helligkeit (Emissive).</li>
         </ul>
       </div>
 
@@ -380,7 +398,7 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
-      const logCameraBtn = document.getElementById("logCameraBtn");
+      const brightnessSlider = document.getElementById("brightnessSlider");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -411,10 +429,10 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // frontal, Augenhöhe (~1.6m), ca. 3m Abstand
+      // finaler Sweetspot (deine Werte)
       function goToSweetspot() {
-        camera.position.set(0, 160, 300);
-        controls.target.set(0, 160, 0);
+        camera.position.set(596.88, 147.29, -590.89);
+        controls.target.set(16.54, 167.83, 16.38);
         controls.update();
       }
 
@@ -585,6 +603,18 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
+      let brightnessEmissive = 0.15; // Startwert = Slider 15 / 100
+
+      brightnessSlider.addEventListener("input", () => {
+        const v = Number(brightnessSlider.value); // 0–50
+        brightnessEmissive = v / 100;             // 0.0–0.5
+        // Laufende Video-Mats live aktualisieren
+        for (const entry of activeVideoEntries) {
+          entry.mat.emissiveIntensity = brightnessEmissive;
+          entry.mat.needsUpdate = true;
+        }
+      });
+
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
         if (!file) return;
@@ -693,11 +723,11 @@
             console.warn("video play() threw", video.src, e);
           }
 
-          // leicht leuchtender, aber noch matter Screen
+          // Screen mit leichtem, regelbarem Leuchten
           entry.mat.map = tex;
           entry.mat.emissiveMap = null;
           entry.mat.emissive = new THREE.Color(0xffffff);
-          entry.mat.emissiveIntensity = 0.15;
+          entry.mat.emissiveIntensity = brightnessEmissive;
           entry.mat.roughness = 0.5;
           entry.mat.metalness = 0.0;
           entry.mat.needsUpdate = true;
@@ -980,17 +1010,6 @@
 
       sweetspotBtn.addEventListener("click", () => {
         goToSweetspot();
-      });
-
-      logCameraBtn.addEventListener("click", () => {
-        const p = camera.position;
-        const t = controls.target;
-        console.log(
-          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
-        );
-        console.log(
-          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
-        );
       });
 
       function animate() {
