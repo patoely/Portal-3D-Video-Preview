@@ -404,7 +404,7 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // für Konsole:
+      // Konsole
       window.camera = camera;
       window.controls = controls;
 
@@ -483,6 +483,7 @@
         loadingStatus.textContent = `Fehler beim Laden: ${url}`;
       };
 
+      // nur Texturen auf models/ umbiegen
       loadingManager.setURLModifier((url) => {
         const lower = url.toLowerCase();
         if (
@@ -547,15 +548,6 @@
           }
         });
 
-        console.log(
-          "innerMaterials:",
-          innerMaterials.length,
-          "outer:",
-          outerMaterials.length,
-          "floor:",
-          floorMaterials.length
-        );
-
         const box = new THREE.Box3().setFromObject(root);
         const center = new THREE.Vector3();
         box.getCenter(center);
@@ -584,7 +576,6 @@
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
         if (!file) return;
-        console.log("User upload for slot", slot, file.name);
 
         const current = userVideos[slot];
         if (current && current.url) {
@@ -955,17 +946,17 @@
           model = gltf.scene;
           setupModel(model);
 
-          const texLoader = new THREE.TextureLoader();
+          const texLoader = new THREE.TextureLoader(loadingManager);
 
-          const insideSpecsTex = texLoader.load("models/Portal_Inside_Specs.png");
+          const insideSpecsTex = texLoader.load("Portal_Inside_Specs.png");
           insideSpecsTex.colorSpace = THREE.SRGBColorSpace;
           insideSpecsTex.flipY = false;
 
-          const outsideSpecsTex = texLoader.load("models/Portal_Outside_Specs.png");
+          const outsideSpecsTex = texLoader.load("Portal_Outside_Specs.png");
           outsideSpecsTex.colorSpace = THREE.SRGBColorSpace;
           outsideSpecsTex.flipY = false;
 
-          const floorSpecsTex = texLoader.load("models/Portal_Floor_Specs.png");
+          const floorSpecsTex = texLoader.load("Portal_Floor_Specs.png");
           floorSpecsTex.colorSpace = THREE.SRGBColorSpace;
           floorSpecsTex.flipY = false;
 
@@ -993,8 +984,6 @@
               }
             }
           });
-
-          console.log("Specs PNGs assigned in viewer");
 
           loadingOverlay.classList.add("hidden");
           updateButtonsForSpecsMode();
