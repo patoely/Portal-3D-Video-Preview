@@ -751,11 +751,14 @@
           }
         }
 
+        // Video per emissiveMap sichtbar machen
         for (const entry of pendingEntries) {
           if (entry.video.readyState < 2) continue;
+
+          entry.mat.map = null;
+          entry.mat.emissiveMap = entry.videoTexture;
           entry.mat.emissive = new THREE.Color(0xffffff);
           entry.mat.emissiveIntensity = 1.0;
-          entry.mat.map = entry.videoTexture;
           entry.mat.needsUpdate = true;
         }
 
@@ -935,6 +938,8 @@
           for (const mat of mats) {
             const original = originalMaps.get(mat) || null;
             mat.map = original;
+            mat.emissiveMap = null;
+            mat.emissiveIntensity = 0.0;
             if (mat.map) mat.map.needsUpdate = true;
             mat.needsUpdate = true;
           }
@@ -976,18 +981,21 @@
 
             if (name.startsWith("portal_inside_specs")) {
               mat.map = insideSpecsTex;
+              mat.emissiveMap = null;
               mat.emissive = new THREE.Color(0x000000);
               mat.emissiveIntensity = 0.0;
               mat.needsUpdate = true;
               originalMaps.set(mat, insideSpecsTex);
             } else if (name.startsWith("portal_outside_specs")) {
               mat.map = outsideSpecsTex;
+              mat.emissiveMap = null;
               mat.emissive = new THREE.Color(0x000000);
               mat.emissiveIntensity = 0.0;
               mat.needsUpdate = true;
               originalMaps.set(mat, outsideSpecsTex);
             } else if (name.startsWith("portal_floor_specs")) {
               mat.map = floorSpecsTex;
+              mat.emissiveMap = null;
               mat.emissive = new THREE.Color(0x000000);
               mat.emissiveIntensity = 0.0;
               mat.needsUpdate = true;
@@ -1049,7 +1057,6 @@
           setupModel(model);
           window.model = model;
 
-          // direkt Specs-PNGs aktivieren
           switchBackToSpecs();
         },
         undefined,
