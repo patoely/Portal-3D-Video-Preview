@@ -699,78 +699,75 @@
         });
       }
 
-      async function activateVideoEntries(pendingEntries) {
-        if (!pendingEntries.length) return;
+ async function activateVideoEntries(pendingEntries) {
+  if (!pendingEntries.length) return;
 
-        const uniqueVideos = [];
-        const isUserFlags = [];
-        const seen = new Set();
+  console.log("activateVideoEntries() – entries:", pendingEntries.length);
 
-        for (const entry of pendingEntries) {
-          if (!entry.video) continue;
-          if (seen.has(entry.video)) continue;
-          seen.add(entry.video);
-          uniqueVideos.push(entry.video);
-          isUserFlags.push(entry.isUser);
-        }
+  const uniqueVideos = [];
+  const isUserFlags = [];
+  const seen = new Set();
 
-        await Promise.all(
-          uniqueVideos.map((v, i) =>
-            waitForVideoReady(v, isUserFlags[i])
-          )
-        );
+  for (const entry of pendingEntries) {
+    if (!entry.video) continue;
+    if (seen.has(entry.video)) continue;
+    seen.add(entry.video);
+    uniqueVideos.push(entry.video);
+    isUserFlags.push(entry.isUser);
+  }
 
-        const readyVideos = uniqueVideos.filter((v) => v.readyState >= 2);
-        if (!readyVideos.length) {
-          console.warn("No ready videos, aborting activateVideoEntries");
-          return;
-        }
+  // 1) Texturen SOFORT zuweisen (auch wenn das Video noch lädt)
+  for (const entry of pendingEntries) {
+    entry.mat.map = entry.videoTexture;
+    entry.mat.needsUpdate = true;
+  }
 
-        for (const v of readyVideos) {
-          try {
-            v.currentTime = 0;
-          } catch (e) {}
-        }
+  // 2) Auf Ready-State warten, damit Play() nicht crasht
+  await Promise.all(
+    uniqueVideos.map((v, i) =>
+      waitForVideoReady(v, isUserFlags[i])
+    )
+  );
 
-        for (const entry of pendingEntries) {
-          if (entry.video.readyState < 2) continue;
-          entry.mat.map = entry.videoTexture;
-          entry.mat.needsUpdate = true;
-        }
+  // 3) Startzeit nullen und Videos abspielen
+  for (const v of uniqueVideos) {
+    try { v.currentTime = 0; } catch (e) {}
+  }
 
-        await Promise.all(
-          readyVideos.map((v) =>
-            v.play().catch(() => {})
-          )
-        );
+  await Promise.all(
+    uniqueVideos.map((v) =>
+      v.play().catch((err) => {
+        console.warn("Video play() failed", v.src, err);
+      })
+    )
+  );
 
-        activeVideoEntries = pendingEntries.filter(
-          (e) => e.video.readyState >= 2
-        );
-        isUsingVideos = !!activeVideoEntries.length;
-        if (isUsingVideos) startSyncMonitor();
+  activeVideoEntries = pendingEntries;
+  isUsingVideos = !!activeVideoEntries.length;
+  if (isUsingVideos) startSyncMonitor();
 
-        // DEBUG: nach dem Mapping alle Materials loggen
-        console.log("DEBUG after activateVideoEntries");
-        model.traverse((child) => {
-          if (!child.isMesh || !child.material) return;
-          const mats = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
-          for (const mat of mats) {
-            if (!mat) continue;
-            const hasMap = !!mat.map;
-            console.log(
-              "MAT",
-              mat.name,
-              "hasMap:",
-              hasMap,
-              "mapType:",
-              hasMap && mat.map.constructor.name
-            );
-          }
-        });
-      }
+  // DEBUG: prüfen, ob Maps gesetzt sind
+  console.log("DEBUG after activateVideoEntries (v2)");
+  model.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+    for (const mat of mats) {
+      if (!mat) continue;
+      const hasMap = !!mat.map;
+      console.log(
+        "MAT",
+        mat.name,
+        "hasMap:",
+        hasMap,
+        "mapType:",
+        hasMap && mat.map.constructor.name
+      );
+    }
+  });
+}
+
 
       async function switchToUserVideos() {
         if (!model) return;
