@@ -598,19 +598,13 @@
         video.preload = "auto";
         video.src = url;
 
-        video.addEventListener(
-          "loadeddata",
-          () => {
-            const texture = new THREE.VideoTexture(video);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.generateMipmaps = false;
+        const texture = new THREE.VideoTexture(video);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
 
-            userVideos[slot] = { video, texture, url, isUser: true };
-          },
-          { once: true }
-        );
+        userVideos[slot] = { video, texture, url, isUser: true };
 
         input.value = "";
       }
@@ -659,7 +653,7 @@
           const refTime = ref.currentTime;
           for (let i = 1; i < videos.length; i++) {
             const v = videos[i];
-            if (!v || v.readyState < 2) continue;
+            if (!v) continue;
             const delta = Math.abs(v.currentTime - refTime);
             if (delta > 0.08) {
               try {
@@ -670,101 +664,38 @@
         }, 250);
       }
 
-      function waitForVideoReady(video, isUser) {
-        return new Promise((resolve) => {
-          if (video.readyState >= 2) {
-            resolve();
-            return;
-          }
-
-          const onReady = () => {
-            cleanup();
-            resolve();
-          };
-
-          const events = isUser
-            ? ["loadeddata", "canplay"]
-            : ["loadeddata", "canplaythrough"];
-
-          events.forEach((ev) => video.addEventListener(ev, onReady));
-
-          const timeout = window.setTimeout(() => {
-            cleanup();
-            resolve();
-          }, isUser ? 200 : 1000);
-
-          function cleanup() {
-            events.forEach((ev) =>
-              video.removeEventListener(ev, onReady)
-            );
-            window.clearTimeout(timeout);
-          }
-        });
-      }
-
+      // NEU: kein Warten mehr auf readyState >= 2
       async function activateVideoEntries(pendingEntries) {
         if (!pendingEntries.length) return;
 
-        const uniqueVideos = [];
-        const isUserFlags = [];
-        const seen = new Set();
-
+        // sofort Materialien auf Video umstellen
         for (const entry of pendingEntries) {
-          if (!entry.video) continue;
-          if (seen.has(entry.video)) continue;
-          seen.add(entry.video);
-          uniqueVideos.push(entry.video);
-          isUserFlags.push(entry.isUser);
-        }
+          const video = entry.video;
+          const tex = entry.videoTexture;
 
-        await Promise.all(
-          uniqueVideos.map((v, i) =>
-            waitForVideoReady(v, isUserFlags[i])
-          )
-        );
-
-        const readyVideos = uniqueVideos.filter((v) => v.readyState >= 2);
-        if (!readyVideos.length) {
-          console.warn("No ready videos, aborting activateVideoEntries");
-          return;
-        }
-
-        for (const v of readyVideos) {
-          try { v.currentTime = 0; } catch (e) {}
-        }
-
-        for (const v of readyVideos) {
           try {
-            console.log("start video", v.src, "readyState:", v.readyState);
-            const playPromise = v.play();
-            if (playPromise && typeof playPromise.then === "function") {
-              playPromise
-                .then(() => {
-                  console.log("video playing", v.src);
-                })
-                .catch((err) => {
-                  console.warn("video play() failed", v.src, err);
-                });
+            video.currentTime = 0;
+          } catch (e) {}
+
+          try {
+            const p = video.play();
+            if (p && typeof p.then === "function") {
+              p.catch((err) =>
+                console.warn("video play() failed", video.src, err)
+              );
             }
           } catch (e) {
-            console.warn("video play() threw", v.src, e);
+            console.warn("video play() threw", video.src, e);
           }
-        }
-
-        // Video per emissiveMap sichtbar machen
-        for (const entry of pendingEntries) {
-          if (entry.video.readyState < 2) continue;
 
           entry.mat.map = null;
-          entry.mat.emissiveMap = entry.videoTexture;
+          entry.mat.emissiveMap = tex;
           entry.mat.emissive = new THREE.Color(0xffffff);
           entry.mat.emissiveIntensity = 1.0;
           entry.mat.needsUpdate = true;
         }
 
-        activeVideoEntries = pendingEntries.filter(
-          (e) => e.video.readyState >= 2
-        );
+        activeVideoEntries = pendingEntries;
         isUsingVideos = !!activeVideoEntries.length;
         if (isUsingVideos) startSyncMonitor();
       }
