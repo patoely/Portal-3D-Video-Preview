@@ -390,7 +390,7 @@
         <ul>
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Sweetspot View setzt die anamorphe Startperspektive.</li>
-          <li>Example Video nutzt Projekt‑Videos aus den Specs‑Basenames.</li>
+          <li>Example Video nutzt Projekt‑Videos für Inside/Outside/Floor.</li>
           <li>Apply Preview: eigene Videos pro Slot hochladen.</li>
         </ul>
       </div>
@@ -485,14 +485,12 @@
       // Weißer Boden ohne Grid
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
 
-      // Weißer Untergrund
       const floorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
       floorMesh.rotation.x = -Math.PI / 2;
       floorMesh.position.y = -0.01;
       scene.add(floorMesh);
 
-      // Shadow‑Plane darüber
       const shadowMat = new THREE.ShadowMaterial({
         color: 0x000000,
         opacity: 0.25
@@ -832,7 +830,7 @@
         startSyncMonitor();
       }
 
-      // Apply Preview (User-Videos, Basename = Portal_*_Specs)
+      // Apply Preview (User-Videos) via Materialnamen
       async function switchToUserVideos() {
         if (!model) return;
         console.log("switchToUserVideos()");
@@ -860,17 +858,11 @@
             : [child.material];
 
           for (const mat of mats) {
-            const baseMap = originalMaps.get(mat);
-            if (!baseMap || !baseMap.image || !baseMap.image.src) continue;
-
-            const src = baseMap.image.src;
-            const fileName = src.split("/").pop();
-            if (!fileName) continue;
-            const baseName = fileName.replace(/\.[^/.]+$/, "");
+            const matName = (mat.name || "").toLowerCase();
 
             if (
               userVideos.inner.video &&
-              baseName === "Portal_Inside_Specs"
+              matName.includes("portal_inside_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -880,7 +872,7 @@
               });
             } else if (
               userVideos.outer.video &&
-              baseName === "Portal_Outside_Specs"
+              matName.includes("portal_outside_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -890,7 +882,7 @@
               });
             } else if (
               userVideos.floor.video &&
-              baseName === "Portal_Floor_Specs"
+              matName.includes("portal_floor_specs")
             ) {
               pendingEntries.push({
                 mat,
@@ -917,7 +909,7 @@
         updateButtonsForUserMode();
       }
 
-      // Example Video (Projektvideos, Basename = Portal_*_Specs)
+      // Example Video (Projektvideos) via Materialnamen
       async function switchToProjectVideos() {
         if (!model) return;
         console.log("switchToProjectVideos() – Example Video clicked");
@@ -934,23 +926,21 @@
             : [child.material];
 
           for (const mat of mats) {
-            const baseMap = originalMaps.get(mat);
-            if (!baseMap || !baseMap.image || !baseMap.image.src) continue;
+            const matName = (mat.name || "").toLowerCase();
+            let baseName = null;
 
-            const src = baseMap.image.src;
-            const fileName = src.split("/").pop();
-            if (!fileName) continue;
-            const baseName = fileName.replace(/\.[^/.]+$/, "");
+            if (matName.includes("portal_inside_specs")) {
+              baseName = "Portal_Inside_Specs";
+            } else if (matName.includes("portal_outside_specs")) {
+              baseName = "Portal_Outside_Specs";
+            } else if (matName.includes("portal_floor_specs")) {
+              baseName = "Portal_Floor_Specs";
+            } else {
+              continue;
+            }
 
             const videoUrl = `models/${baseName}.mp4`;
-            console.log(
-              "Example mapping via baseMap.image.src",
-              src,
-              "→ baseName:",
-              baseName,
-              "videoUrl:",
-              videoUrl
-            );
+            console.log("Example mapping via mat.name", matName, "→", videoUrl);
 
             const video = document.createElement("video");
             video.loop = true;
