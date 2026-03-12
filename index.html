@@ -925,79 +925,64 @@
         updateButtonsForUserMode();
       }
 
-      // Mode: Switch to Project Example Videos
-      async function switchToProjectVideos() {
-        if (!model) return;
-        console.log("switchToProjectVideos() – Example Video clicked");
+  // Mode: Switch to Project Example Videos (Hardcode-Test)
+async function switchToProjectVideos() {
+  if (!model) return;
+  console.log("switchToProjectVideos() – HARDCODE TEST");
 
-        stopSyncMonitor();
-        stopAndDisposeVideos();
+  stopSyncMonitor();
+  stopAndDisposeVideos();
 
-        const pendingEntries = [];
+  // Nimm ein existierendes MP4 aus models/
+  const videoUrl = "models/portal_inside_specs.mp4"; // ggf. Pfad/Name anpassen
+  console.log("Using hardcoded videoUrl:", videoUrl);
 
-        model.traverse((child) => {
-          if (!child.isMesh || !child.material) return;
-          const mats = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
+  const video = document.createElement("video");
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.src = videoUrl;
 
-          for (const mat of mats) {
-            const baseMap = originalMaps.get(mat);
-            if (!baseMap || !baseMap.image || !baseMap.image.src) continue;
+  const texture = new THREE.VideoTexture(video);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
 
-            const src = baseMap.image.src;
-            const fileName = src.split("/").pop();
-            if (!fileName) continue;
-            const baseName = fileName
-              .replace(/\.[^/.]+$/, "")
-              .toLowerCase();
+  const pendingEntries = [];
+  model.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
 
-            const videoUrl = `models/${baseName}.mp4`;
-            console.log(
-              "Example mapping baseMap src",
-              src,
-              "→",
-              baseName,
-              "videoUrl:",
-              videoUrl
-            );
+    for (const mat of mats) {
+      pendingEntries.push({
+        mat,
+        video,
+        videoTexture: texture,
+        isUser: false
+      });
+    }
+  });
 
-            const video = document.createElement("video");
-            video.loop = true;
-            video.muted = true;
-            video.playsInline = true;
-            video.preload = "auto";
-            video.src = videoUrl;
+  console.log(
+    "HARDCODE pendingEntries:",
+    pendingEntries.length,
+    pendingEntries
+  );
 
-            const texture = new THREE.VideoTexture(video);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.generateMipmaps = false;
+  if (!pendingEntries.length) {
+    console.warn("No mesh materials found for hardcode test.");
+    updateButtonsForSpecsMode();
+    return;
+  }
 
-            pendingEntries.push({
-              mat,
-              video,
-              videoTexture: texture,
-              isUser: false
-            });
-          }
-        });
+  await activateVideoEntries(pendingEntries);
+  updateButtonsForExampleMode();
+}
 
-        console.log(
-          "pendingEntries Example:",
-          pendingEntries.length,
-          pendingEntries
-        );
-
-        if (!pendingEntries.length) {
-          updateButtonsForSpecsMode();
-          return;
-        }
-
-        await activateVideoEntries(pendingEntries);
-        updateButtonsForExampleMode();
-      }
 
       // Specs Preview: Original Textures
       function restoreOriginalTextures() {
