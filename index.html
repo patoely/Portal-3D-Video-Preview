@@ -573,6 +573,32 @@
         outer: { video: null, texture: null, url: null, isUser: true },
         floor: { video: null, texture: null, url: null, isUser: true }
       };
+model = gltf.scene;
+setupModel(model);
+
+// DEBUG: zeigen, welche Materials beim Laden eine PNG-Map haben
+console.log("DEBUG after setupModel (initial PNG state)");
+model.traverse((child) => {
+  if (!child.isMesh || !child.material) return;
+  const mats = Array.isArray(child.material)
+    ? child.material
+    : [child.material];
+  for (const mat of mats) {
+    if (!mat) continue;
+    const hasMap = !!mat.map;
+    console.log(
+      "INIT MAT",
+      mat.name,
+      "hasMap:",
+      hasMap,
+      "mapType:",
+      hasMap && mat.map.constructor.name
+    );
+  }
+});
+
+loadingOverlay.classList.add("hidden");
+updateButtonsForSpecsMode();
 
       let activeVideoEntries = [];
       let isUsingVideos = false;
