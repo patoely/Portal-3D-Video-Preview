@@ -404,7 +404,6 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // seitlicher Sweetspot
       function goToSweetspot() {
         camera.position.set(450, 260, 550);
         controls.target.set(0, 200, 0);
@@ -433,7 +432,6 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // dunklerer Boden
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
       const floorMat = new THREE.MeshStandardMaterial({
         color: 0xb0b0b0,
@@ -563,8 +561,8 @@
 
         scene.add(root);
 
-        // Modell 200% skalieren
-        root.scale.set(2, 2, 2);
+        // Modell 500% skalieren
+        root.scale.set(5, 5, 5);
         root.updateMatrixWorld(true);
 
         goToSweetspot();
@@ -781,10 +779,12 @@
 
           for (const mat of mats) {
             const matName = (mat.name || "").toLowerCase();
+            const meshName = (child.name || "").toLowerCase();
 
             if (
               userVideos.inner.video &&
-              matName.startsWith("portal_inside_specs")
+              (matName.startsWith("portal_inside_specs") ||
+                meshName.includes("portal_inside_specs"))
             ) {
               pendingEntries.push({
                 mat,
@@ -794,7 +794,8 @@
               });
             } else if (
               userVideos.outer.video &&
-              matName.startsWith("portal_outside_specs")
+              (matName.startsWith("portal_outside_specs") ||
+                meshName.includes("portal_outside_specs"))
             ) {
               pendingEntries.push({
                 mat,
@@ -804,7 +805,8 @@
               });
             } else if (
               userVideos.floor.video &&
-              matName.startsWith("portal_floor_specs")
+              (matName.startsWith("portal_floor_specs") ||
+                meshName.includes("portal_floor_specs"))
             ) {
               pendingEntries.push({
                 mat,
@@ -847,13 +849,23 @@
 
           for (const mat of mats) {
             const matName = (mat.name || "").toLowerCase();
+            const meshName = (child.name || "").toLowerCase();
             let baseName = null;
 
-            if (matName.startsWith("portal_inside_specs")) {
+            if (
+              matName.startsWith("portal_inside_specs") ||
+              meshName.includes("portal_inside_specs")
+            ) {
               baseName = "Portal_Inside_Specs";
-            } else if (matName.startsWith("portal_outside_specs")) {
+            } else if (
+              matName.startsWith("portal_outside_specs") ||
+              meshName.includes("portal_outside_specs")
+            ) {
               baseName = "Portal_Outside_Specs";
-            } else if (matName.startsWith("portal_floor_specs")) {
+            } else if (
+              matName.startsWith("portal_floor_specs") ||
+              meshName.includes("portal_floor_specs")
+            ) {
               baseName = "Portal_Floor_Specs";
             } else {
               continue;
@@ -971,7 +983,6 @@
           model = gltf.scene;
           setupModel(model);
 
-          // Specs-PNGs laden und zuweisen
           const texLoader = new THREE.TextureLoader(loadingManager);
 
           const insideSpecsTex = texLoader.load("Portal_Inside_Specs.png");
