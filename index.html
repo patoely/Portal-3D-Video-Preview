@@ -736,14 +736,24 @@
         }
 
         // Autoplay robust starten
-        for (const v of readyVideos) {
-          try {
-            const playPromise = v.play();
-            if (playPromise && typeof playPromise.then === "function") {
-              playPromise.catch(() => {});
-            }
-          } catch (e) {}
-        }
+    for (const v of readyVideos) {
+  try {
+    console.log("start video", v.src, "readyState:", v.readyState);
+    const playPromise = v.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise
+        .then(() => {
+          console.log("video playing", v.src);
+        })
+        .catch((err) => {
+          console.warn("video play() failed", v.src, err);
+        });
+    }
+  } catch (e) {
+    console.warn("video play() threw", v.src, e);
+  }
+}
+
 
         activeVideoEntries = pendingEntries.filter(
           (e) => e.video.readyState >= 2
