@@ -404,8 +404,9 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
+      // ca. 45° von rechts
       function goToSweetspot() {
-        camera.position.set(450, 260, 550);
+        camera.position.set(900, 260, 900);
         controls.target.set(0, 200, 0);
         controls.update();
       }
@@ -561,7 +562,7 @@
 
         scene.add(root);
 
-        // Modell 500% skalieren
+        // Modell stark skalieren
         root.scale.set(100, 100, 100);
         root.updateMatrixWorld(true);
 
@@ -734,17 +735,15 @@
           try { v.currentTime = 0; } catch (e) {}
         }
 
-        for (const entry of pendingEntries) {
-          if (entry.video.readyState < 2) continue;
-          entry.mat.map = entry.videoTexture;
-          entry.mat.needsUpdate = true;
+        // Autoplay robust starten
+        for (const v of readyVideos) {
+          try {
+            const playPromise = v.play();
+            if (playPromise && typeof playPromise.then === "function") {
+              playPromise.catch(() => {});
+            }
+          } catch (e) {}
         }
-
-        await Promise.all(
-          readyVideos.map((v) =>
-            v.play().catch(() => {})
-          )
-        );
 
         activeVideoEntries = pendingEntries.filter(
           (e) => e.video.readyState >= 2
