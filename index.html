@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>3D Portal Viewer – Debug</title>
+    <title>3D Portal Viewer – Video Preview</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script type="importmap">
@@ -347,7 +347,7 @@
       <div id="infoPanel">
         <h2>Navigation & Modi</h2>
         <ul>
-          <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
+          <li>Start: PNG‑Specs (Briefing‑Grafiken).</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
         </ul>
@@ -436,10 +436,14 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // Hellgrauer Boden
-      const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
-      const floorMat = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 });
-      const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
+      // Grauer Boden mit Verlauf (ungefähr)
+      const floorGeo = new THREE.PlaneGeometry(8000, 8000, 1, 1);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0xe5e5e5,
+        roughness: 0.9,
+        metalness: 0.0
+      });
+      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
       floorMesh.rotation.x = -Math.PI / 2;
       floorMesh.position.y = -0.01;
       scene.add(floorMesh);
@@ -448,7 +452,7 @@
         color: 0x000000,
         opacity: 0.25
       });
-      const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowMat);
+      const shadowPlane = new THREE.Mesh(floorGeo, shadowMat);
       shadowPlane.rotation.x = -Math.PI / 2;
       shadowPlane.position.y = 0;
       shadowPlane.receiveShadow = true;
@@ -603,6 +607,7 @@
             texture.minFilter = THREE.LinearFilter;
             texture.magFilter = THREE.LinearFilter;
             texture.generateMipmaps = false;
+            texture.flipY = false;
 
             userVideos[slot] = { video, texture, url, isUser: true };
           },
@@ -699,75 +704,49 @@
         });
       }
 
- async function activateVideoEntries(pendingEntries) {
-  if (!pendingEntries.length) return;
+      async function activateVideoEntries(pendingEntries) {
+        if (!pendingEntries.length) return;
 
-  console.log("activateVideoEntries() – entries:", pendingEntries.length);
+        const uniqueVideos = [];
+        const isUserFlags = [];
+        const seen = new Set();
 
-  const uniqueVideos = [];
-  const isUserFlags = [];
-  const seen = new Set();
+        for (const entry of pendingEntries) {
+          if (!entry.video) continue;
+          if (seen.has(entry.video)) continue;
+          seen.add(entry.video);
+          uniqueVideos.push(entry.video);
+          isUserFlags.push(entry.isUser);
+        }
 
-  for (const entry of pendingEntries) {
-    if (!entry.video) continue;
-    if (seen.has(entry.video)) continue;
-    seen.add(entry.video);
-    uniqueVideos.push(entry.video);
-    isUserFlags.push(entry.isUser);
-  }
+        // VideoTexture sofort zuweisen, UVs bleiben wie bei PNG
+        for (const entry of pendingEntries) {
+          entry.mat.map = entry.videoTexture;
+          entry.mat.needsUpdate = true;
+        }
 
-  // 1) Texturen SOFORT zuweisen (auch wenn das Video noch lädt)
-  for (const entry of pendingEntries) {
-    entry.mat.map = entry.videoTexture;
-    entry.mat.needsUpdate = true;
-  }
+        await Promise.all(
+          uniqueVideos.map((v, i) =>
+            waitForVideoReady(v, isUserFlags[i])
+          )
+        );
 
-  // 2) Auf Ready-State warten, damit Play() nicht crasht
-  await Promise.all(
-    uniqueVideos.map((v, i) =>
-      waitForVideoReady(v, isUserFlags[i])
-    )
-  );
+        for (const v of uniqueVideos) {
+          try { v.currentTime = 0; } catch (e) {}
+        }
 
-  // 3) Startzeit nullen und Videos abspielen
-  for (const v of uniqueVideos) {
-    try { v.currentTime = 0; } catch (e) {}
-  }
+        await Promise.all(
+          uniqueVideos.map((v) =>
+            v.play().catch((err) => {
+              console.warn("Video play() failed", v.src, err);
+            })
+          )
+        );
 
-  await Promise.all(
-    uniqueVideos.map((v) =>
-      v.play().catch((err) => {
-        console.warn("Video play() failed", v.src, err);
-      })
-    )
-  );
-
-  activeVideoEntries = pendingEntries;
-  isUsingVideos = !!activeVideoEntries.length;
-  if (isUsingVideos) startSyncMonitor();
-
-  // DEBUG: prüfen, ob Maps gesetzt sind
-  console.log("DEBUG after activateVideoEntries (v2)");
-  model.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
-    const mats = Array.isArray(child.material)
-      ? child.material
-      : [child.material];
-    for (const mat of mats) {
-      if (!mat) continue;
-      const hasMap = !!mat.map;
-      console.log(
-        "MAT",
-        mat.name,
-        "hasMap:",
-        hasMap,
-        "mapType:",
-        hasMap && mat.map.constructor.name
-      );
-    }
-  });
-}
-
+        activeVideoEntries = pendingEntries;
+        isUsingVideos = !!activeVideoEntries.length;
+        if (isUsingVideos) startSyncMonitor();
+      }
 
       async function switchToUserVideos() {
         if (!model) return;
@@ -830,12 +809,6 @@
           }
         });
 
-        console.log(
-          "DEBUG User pendingEntries:",
-          pendingEntries.length,
-          pendingEntries
-        );
-
         if (!pendingEntries.length) {
           updateButtonsForSpecsMode();
           return;
@@ -882,13 +855,12 @@
             video.preload = "auto";
             video.src = videoUrl;
 
-           const texture = new THREE.VideoTexture(video);
-texture.colorSpace = THREE.SRGBColorSpace;
-texture.minFilter = THREE.LinearFilter;
-texture.magFilter = THREE.LinearFilter;
-texture.generateMipmaps = false;
-texture.flipY = false; // wichtig, wenn dein GLB schon korrekt orientierte UVs hat
-
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+            texture.flipY = false;
 
             pendingEntries.push({
               mat,
@@ -898,12 +870,6 @@ texture.flipY = false; // wichtig, wenn dein GLB schon korrekt orientierte UVs h
             });
           }
         });
-
-        console.log(
-          "DEBUG Example pendingEntries:",
-          pendingEntries.length,
-          pendingEntries
-        );
 
         if (!pendingEntries.length) {
           updateButtonsForSpecsMode();
@@ -987,7 +953,7 @@ texture.flipY = false; // wichtig, wenn dein GLB schon korrekt orientierte UVs h
           model = gltf.scene;
           setupModel(model);
           loadingOverlay.classList.add("hidden");
-          updateButtonsForSpecsMode();
+          updateButtonsForSpecsMode(); // Start mit PNG-Specs
         },
         undefined,
         (error) => {
