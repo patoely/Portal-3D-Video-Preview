@@ -404,9 +404,10 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
+      // frontal, Augenhöhe (~1.6m), ca. 3m Abstand
       function goToSweetspot() {
-        camera.position.set(900, 260, 900);
-        controls.target.set(0, 200, 0);
+        camera.position.set(0, 160, 300);
+        controls.target.set(0, 160, 0);
         controls.update();
       }
 
@@ -603,6 +604,7 @@
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.generateMipmaps = false;
+        texture.flipY = false; // wichtig für glTF-UVs [web:225][web:234]
 
         userVideos[slot] = { video, texture, url, isUser: true };
 
@@ -664,11 +666,9 @@
         }, 250);
       }
 
-      // NEU: kein Warten mehr auf readyState >= 2
       async function activateVideoEntries(pendingEntries) {
         if (!pendingEntries.length) return;
 
-        // sofort Materialien auf Video umstellen
         for (const entry of pendingEntries) {
           const video = entry.video;
           const tex = entry.videoTexture;
@@ -832,6 +832,7 @@
             texture.minFilter = THREE.LinearFilter;
             texture.magFilter = THREE.LinearFilter;
             texture.generateMipmaps = false;
+            texture.flipY = false; // wie PNG-Specs gemappt [web:225][web:234]
 
             pendingEntries.push({
               mat,
