@@ -1,9 +1,8 @@
-
 <!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>3D Portal Viewer</title>
+    <title>3D Portal Viewer – Pseudo HDRI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Importmap für Three.js -->
@@ -40,9 +39,13 @@
         height: 100%;
         width: 100%;
         overflow: hidden;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-          sans-serif;
-        background: radial-gradient(circle at top, #202020 0, #050505 55%);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+        /* Pseudo-HDRI Hintergrund */
+        background:
+          radial-gradient(circle at 10% -10%, #5b6c85 0, transparent 40%),
+          radial-gradient(circle at 80% 0%, #3b4a63 0, transparent 40%),
+          radial-gradient(circle at 50% 120%, #05060a 0, #05060a 55%, #010103 100%);
         color: var(--text);
       }
 
@@ -61,8 +64,6 @@
       canvas {
         display: block;
       }
-
-      /* Toolbar (links oben) */
 
       #toolbar {
         position: absolute;
@@ -160,8 +161,6 @@
         box-shadow: none;
       }
 
-      /* File Inputs */
-
       .file-slot {
         display: flex;
         align-items: center;
@@ -210,8 +209,6 @@
         cursor: pointer;
       }
 
-      /* Info Panel */
-
       #infoPanel {
         position: absolute;
         left: 16px;
@@ -244,8 +241,6 @@
       #infoPanel li {
         margin-bottom: 2px;
       }
-
-      /* Loading Overlay */
 
       #loadingOverlay {
         position: absolute;
@@ -368,11 +363,7 @@
             <span class="file-slot-label">Inner</span>
             <label class="file-input-wrapper">
               <span>Video wählen</span>
-              <input
-                id="innerVideoInput"
-                type="file"
-                accept="video/*"
-              />
+              <input id="innerVideoInput" type="file" accept="video/*" />
             </label>
           </div>
         </div>
@@ -381,11 +372,7 @@
             <span class="file-slot-label">Outer</span>
             <label class="file-input-wrapper">
               <span>Video wählen</span>
-              <input
-                id="outerVideoInput"
-                type="file"
-                accept="video/*"
-              />
+              <input id="outerVideoInput" type="file" accept="video/*" />
             </label>
           </div>
         </div>
@@ -394,11 +381,7 @@
             <span class="file-slot-label">Floor</span>
             <label class="file-input-wrapper">
               <span>Video wählen</span>
-              <input
-                id="floorVideoInput"
-                type="file"
-                accept="video/*"
-              />
+              <input id="floorVideoInput" type="file" accept="video/*" />
             </label>
           </div>
         </div>
@@ -410,7 +393,7 @@
         <ul>
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Sweetspot View setzt die anamorphe Startperspektive.</li>
-          <li>Example Video nutzt Projekt‑Videos auf Basis der Specs‑Textures.</li>
+          <li>Example Video nutzt Projekt‑Videos aus den Specs‑Basenames.</li>
           <li>Apply Preview: eigene Videos pro Slot hochladen.</li>
         </ul>
       </div>
@@ -445,12 +428,15 @@
 
       // Three.js Core
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x111111);
+      // Optional Fog für etwas mehr Tiefe
+      scene.fog = new THREE.Fog(0x05060a, 2500, 6000);
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
-        powerPreference: "high-performance"
+        powerPreference: "high-performance",
+        alpha: true // Canvas transparent, Pseudo-HDRI aus CSS sichtbar
       });
+      renderer.setClearColor(0x000000, 0); // keine feste Hintergrundfarbe
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -470,6 +456,7 @@
 
       // Sweetspot Pose
       function goToSweetspot() {
+        console.log("goToSweetspot()");
         camera.position.set(
           878.3323942469066,
           132.8253707911402,
@@ -479,8 +466,8 @@
         controls.update();
       }
 
-      // Lights & Environment
-      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x202030, 0.7);
+      // Lights & Environment (leicht „studio“/Pseudo-HDRI abgestimmt)
+      const hemiLight = new THREE.HemisphereLight(0xf0f4ff, 0x1c1f25, 0.9);
       hemiLight.position.set(0, 1, 0);
       scene.add(hemiLight);
 
@@ -499,10 +486,11 @@
       fillLight.position.set(-600, 400, -500);
       scene.add(fillLight);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.18);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      const grid = new THREE.GridHelper(4000, 40, 0x444444, 0x222222);
+      // Dezenter Grid + Shadow Plane, falls du Ground willst:
+      const grid = new THREE.GridHelper(4000, 40, 0x555555, 0x333333);
       grid.position.y = 0;
       scene.add(grid);
 
@@ -528,6 +516,7 @@
       const loadingManager = new THREE.LoadingManager();
 
       loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
+        console.log("Loading started", url, itemsLoaded, "/", itemsTotal);
         loadingStatus.textContent = "Lade Assets…";
         loadingOverlay.classList.remove("hidden");
       };
@@ -537,6 +526,7 @@
       };
 
       loadingManager.onError = (url) => {
+        console.error("Loading error:", url);
         loadingStatus.textContent = `Fehler beim Laden: ${url}`;
       };
 
@@ -550,7 +540,9 @@
           lower.endsWith(".webp")
         ) {
           const filename = url.split("/").pop();
-          return "models/" + filename;
+          const mapped = "models/" + filename;
+          console.log("URLModifier", url, "→", mapped);
+          return mapped;
         }
         return url;
       });
@@ -563,12 +555,12 @@
       let model = null;
       const originalMaps = new WeakMap();
 
-      // Optional Slot‑Arrays (nicht mehr kritisch, aber ggf. nützlich)
       const innerMaterials = [];
       const outerMaterials = [];
       const floorMaterials = [];
 
       function setupModel(root) {
+        console.log("setupModel(root)");
         root.traverse((child) => {
           if (!child.isMesh) return;
 
@@ -617,6 +609,15 @@
           }
         });
 
+        console.log(
+          "innerMaterials:",
+          innerMaterials.length,
+          "outer:",
+          outerMaterials.length,
+          "floor:",
+          floorMaterials.length
+        );
+
         // Bounding Box, Re‑Center & auf Boden setzen
         const box = new THREE.Box3().setFromObject(root);
         const center = new THREE.Vector3();
@@ -647,6 +648,7 @@
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
         if (!file) return;
+        console.log("User upload for slot", slot, file.name);
 
         const current = userVideos[slot];
         if (current && current.url) {
@@ -667,6 +669,7 @@
         video.addEventListener(
           "loadeddata",
           () => {
+            console.log("User video loadeddata", slot);
             const texture = new THREE.VideoTexture(video);
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.minFilter = THREE.LinearFilter;
@@ -694,12 +697,14 @@
       // Video Sync Helpers
       function stopSyncMonitor() {
         if (syncIntervalId !== null) {
+          console.log("stopSyncMonitor()");
           clearInterval(syncIntervalId);
           syncIntervalId = null;
         }
       }
 
       function stopAndDisposeVideos() {
+        console.log("stopAndDisposeVideos()", activeVideoEntries.length);
         for (const entry of activeVideoEntries) {
           if (!entry || !entry.videoTexture) continue;
           const video = entry.video;
@@ -708,7 +713,7 @@
             video.removeAttribute("src");
             video.load();
           } catch (e) {
-            // ignore
+            console.warn("Error stopping video", e);
           }
           entry.videoTexture.dispose();
         }
@@ -723,6 +728,7 @@
         );
         if (videos.length === 0) return;
 
+        console.log("startSyncMonitor() videos:", videos.length);
         syncIntervalId = window.setInterval(() => {
           const ref = videos[0];
           const refTime = ref.currentTime;
@@ -734,7 +740,7 @@
               try {
                 v.currentTime = refTime;
               } catch (e) {
-                // ignore
+                console.warn("Sync currentTime failed", e);
               }
             }
           }
@@ -760,6 +766,11 @@
           events.forEach((ev) => video.addEventListener(ev, onReady));
 
           const timeout = window.setTimeout(() => {
+            console.warn(
+              "waitForVideoReady timeout",
+              isUser ? "user" : "project",
+              video.src
+            );
             cleanup();
             resolve();
           }, isUser ? 200 : 1000);
@@ -774,6 +785,11 @@
       }
 
       async function activateVideoEntries(pendingEntries) {
+        console.log(
+          "activateVideoEntries() with",
+          pendingEntries.length,
+          "entries"
+        );
         if (!pendingEntries.length) return;
 
         const uniqueVideos = [];
@@ -788,6 +804,8 @@
           isUserFlags.push(entry.isUser);
         }
 
+        console.log("uniqueVideos:", uniqueVideos.length);
+
         await Promise.all(
           uniqueVideos.map((v, i) =>
             waitForVideoReady(v, isUserFlags[i])
@@ -798,7 +816,7 @@
           try {
             v.currentTime = 0;
           } catch (e) {
-            // ignore
+            console.warn("set currentTime failed", e);
           }
         }
 
@@ -809,11 +827,9 @@
 
         await Promise.all(
           uniqueVideos.map((v) =>
-            v
-              .play()
-              .catch(() => {
-                /* ignore */
-              })
+            v.play().catch((err) => {
+              console.warn("Video play() failed", v.src, err);
+            })
           )
         );
 
@@ -825,6 +841,7 @@
       // Mode: Switch to User Videos
       async function switchToUserVideos() {
         if (!model) return;
+        console.log("switchToUserVideos()");
 
         stopSyncMonitor();
         stopAndDisposeVideos();
@@ -834,8 +851,8 @@
           (userVideos.outer && userVideos.outer.video) ||
           (userVideos.floor && userVideos.floor.video);
 
+        console.log("hasAnyUserVideo:", !!hasAnyUserVideo);
         if (!hasAnyUserVideo) {
-          // No user video → UI zurück
           updateButtonsForSpecsMode();
           return;
         }
@@ -893,8 +910,13 @@
           }
         });
 
+        console.log(
+          "pendingEntries User:",
+          pendingEntries.length,
+          pendingEntries
+        );
+
         if (!pendingEntries.length) {
-          // Keine Slots gemappt
           updateButtonsForSpecsMode();
           return;
         }
@@ -906,6 +928,7 @@
       // Mode: Switch to Project Example Videos
       async function switchToProjectVideos() {
         if (!model) return;
+        console.log("switchToProjectVideos() – Example Video clicked");
 
         stopSyncMonitor();
         stopAndDisposeVideos();
@@ -925,9 +948,19 @@
             const src = baseMap.image.src;
             const fileName = src.split("/").pop();
             if (!fileName) continue;
-            const baseName = fileName.replace(/\.[^/.]+$/, "");
+            const baseName = fileName
+              .replace(/\.[^/.]+$/, "")
+              .toLowerCase();
 
             const videoUrl = `models/${baseName}.mp4`;
+            console.log(
+              "Example mapping baseMap src",
+              src,
+              "→",
+              baseName,
+              "videoUrl:",
+              videoUrl
+            );
 
             const video = document.createElement("video");
             video.loop = true;
@@ -951,6 +984,12 @@
           }
         });
 
+        console.log(
+          "pendingEntries Example:",
+          pendingEntries.length,
+          pendingEntries
+        );
+
         if (!pendingEntries.length) {
           updateButtonsForSpecsMode();
           return;
@@ -963,6 +1002,7 @@
       // Specs Preview: Original Textures
       function restoreOriginalTextures() {
         if (!model) return;
+        console.log("restoreOriginalTextures()");
 
         model.traverse((child) => {
           if (!child.isMesh || !child.material) return;
@@ -980,6 +1020,7 @@
       }
 
       function switchBackToSpecs() {
+        console.log("switchBackToSpecs()");
         stopSyncMonitor();
         stopAndDisposeVideos();
         restoreOriginalTextures();
@@ -988,18 +1029,21 @@
 
       // Button State Management
       function updateButtonsForSpecsMode() {
+        console.log("Buttons → Specs mode");
         specsPreviewBtn.disabled = true;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = false;
       }
 
       function updateButtonsForExampleMode() {
+        console.log("Buttons → Example mode");
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = true;
         applyPreviewBtn.disabled = false;
       }
 
       function updateButtonsForUserMode() {
+        console.log("Buttons → User mode");
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = true;
@@ -1007,18 +1051,22 @@
 
       // Button Events
       specsPreviewBtn.addEventListener("click", () => {
+        console.log("Specs Preview clicked");
         switchBackToSpecs();
       });
 
       exampleVideoBtn.addEventListener("click", () => {
+        console.log("Example Video button click");
         switchToProjectVideos();
       });
 
       applyPreviewBtn.addEventListener("click", () => {
+        console.log("Apply Preview clicked");
         switchToUserVideos();
       });
 
       sweetspotBtn.addEventListener("click", () => {
+        console.log("Sweetspot button click");
         goToSweetspot();
       });
 
@@ -1035,6 +1083,7 @@
       gltfLoader.load(
         "Portal_mapped.glb",
         (gltf) => {
+          console.log("GLB loaded");
           model = gltf.scene;
           setupModel(model);
           loadingOverlay.classList.add("hidden");
@@ -1043,7 +1092,7 @@
         },
         undefined,
         (error) => {
-          console.error(error);
+          console.error("GLB load error", error);
           loadingStatus.textContent = "Fehler beim Laden des Modells.";
         }
       );
