@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <title>3D Portal Viewer – Color Debug</title>
+    <title>3D Portal Viewer – Video Preview</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script type="importmap">
@@ -41,13 +41,7 @@
       }
 
       #app { position: relative; width: 100vw; height: 100vh; }
-
-      #viewerContainer {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-      }
-
+      #viewerContainer { position: absolute; inset: 0; overflow: hidden; }
       canvas { display: block; }
 
       #toolbar {
@@ -144,6 +138,54 @@
         opacity: 0.45;
         cursor: default;
         box-shadow: none;
+      }
+
+      .file-slot {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .file-slot-label {
+        min-width: 40px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 11px;
+      }
+
+      .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 999px;
+        border: 1px dashed rgba(255, 255, 255, 0.24);
+        padding: 3px 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease;
+      }
+
+      .file-input-wrapper:hover {
+        border-color: var(--accent);
+        background: rgba(0, 0, 0, 0.65);
+      }
+
+      .file-input-wrapper span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .file-input-wrapper input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
       }
 
       #infoPanel {
@@ -253,28 +295,61 @@
 
       <div id="toolbar">
         <div class="group">
-          <button id="specsPreviewBtn" class="tool-btn primary" type="button" disabled>
+          <button
+            id="specsPreviewBtn"
+            class="tool-btn primary"
+            type="button"
+            disabled
+          >
             <span class="dot"></span>
             Specs Preview
           </button>
           <button id="exampleVideoBtn" class="tool-btn" type="button">
-            Color Debug
+            Example Video
           </button>
-          <button id="applyPreviewBtn" class="tool-btn" type="button" disabled>
-            Apply Preview (off)
+          <button id="applyPreviewBtn" class="tool-btn" type="button">
+            Apply Preview
           </button>
           <button id="sweetspotBtn" class="tool-btn" type="button">
             Sweetspot View
           </button>
         </div>
+
+        <div class="group">
+          <div class="file-slot">
+            <span class="file-slot-label">Inner</span>
+            <label class="file-input-wrapper">
+              <span>Video wählen</span>
+              <input id="innerVideoInput" type="file" accept="video/*" />
+            </label>
+          </div>
+        </div>
+        <div class="group">
+          <div class="file-slot">
+            <span class="file-slot-label">Outer</span>
+            <label class="file-input-wrapper">
+              <span>Video wählen</span>
+              <input id="outerVideoInput" type="file" accept="video/*" />
+            </label>
+          </div>
+        </div>
+        <div class="group">
+          <div class="file-slot">
+            <span class="file-slot-label">Floor</span>
+            <label class="file-input-wrapper">
+              <span>Video wählen</span>
+              <input id="floorVideoInput" type="file" accept="video/*" />
+            </label>
+          </div>
+        </div>
       </div>
 
       <div id="infoPanel">
-        <h2>Color Debug</h2>
+        <h2>Navigation & Modi</h2>
         <ul>
-          <li>Inside‑Slots: rot</li>
-          <li>Outside‑Slots: grün</li>
-          <li>Floor‑Slot: blau</li>
+          <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
+          <li>Example: Projekt‑Videos pro Slot.</li>
+          <li>Apply: eigene Upload‑Videos pro Slot.</li>
         </ul>
       </div>
 
@@ -299,6 +374,9 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
+      const innerVideoInput = document.getElementById("innerVideoInput");
+      const outerVideoInput = document.getElementById("outerVideoInput");
+      const floorVideoInput = document.getElementById("floorVideoInput");
 
       const scene = new THREE.Scene();
       scene.fog = new THREE.Fog(0x05060a, 2500, 6000);
@@ -358,8 +436,9 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
+      // Hellgrauer Boden (#f2f2f2)
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
-      const floorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const floorMat = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 });
       const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
       floorMesh.rotation.x = -Math.PI / 2;
       floorMesh.position.y = -0.01;
@@ -485,14 +564,64 @@
         goToSweetspot();
       }
 
-      // Videos komplett deaktiviert im Debug
+      // Video-State
       const userVideos = {
         inner: { video: null, texture: null, url: null, isUser: true },
         outer: { video: null, texture: null, url: null, isUser: true },
         floor: { video: null, texture: null, url: null, isUser: true }
       };
+
       let activeVideoEntries = [];
+      let isUsingVideos = false;
       let syncIntervalId = null;
+
+      function handleUserVideoUpload(slot, input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        console.log("User upload for slot", slot, file.name);
+
+        const current = userVideos[slot];
+        if (current && current.url) {
+          URL.revokeObjectURL(current.url);
+        }
+        if (current && current.texture) {
+          current.texture.dispose();
+        }
+
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = "auto";
+        video.src = url;
+
+        video.addEventListener(
+          "loadeddata",
+          () => {
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+
+            userVideos[slot] = { video, texture, url, isUser: true };
+          },
+          { once: true }
+        );
+
+        input.value = "";
+      }
+
+      innerVideoInput.addEventListener("change", () =>
+        handleUserVideoUpload("inner", innerVideoInput)
+      );
+      outerVideoInput.addEventListener("change", () =>
+        handleUserVideoUpload("outer", outerVideoInput)
+      );
+      floorVideoInput.addEventListener("change", () =>
+        handleUserVideoUpload("floor", floorVideoInput)
+      );
 
       function stopSyncMonitor() {
         if (syncIntervalId !== null) {
@@ -500,45 +629,147 @@
           syncIntervalId = null;
         }
       }
+
       function stopAndDisposeVideos() {
         for (const entry of activeVideoEntries) {
           if (!entry || !entry.videoTexture) continue;
+          const video = entry.video;
+          try {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+          } catch (e) {}
           entry.videoTexture.dispose();
         }
         activeVideoEntries = [];
+        isUsingVideos = false;
       }
 
-      // Specs wiederherstellen
-      function restoreOriginalTextures() {
-        if (!model) return;
-        model.traverse((child) => {
-          if (!child.isMesh || !child.material) return;
-          const mats = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
-          for (const mat of mats) {
-            const original = originalMaps.get(mat) || null;
-            mat.map = original;
-            mat.needsUpdate = true;
+      function startSyncMonitor() {
+        if (!activeVideoEntries.length) return;
+        const videos = Array.from(
+          new Set(activeVideoEntries.map((e) => e.video))
+        );
+        if (videos.length === 0) return;
+
+        syncIntervalId = window.setInterval(() => {
+          const ref = videos[0];
+          const refTime = ref.currentTime;
+          for (let i = 1; i < videos.length; i++) {
+            const v = videos[i];
+            if (!v || v.readyState < 2) continue;
+            const delta = Math.abs(v.currentTime - refTime);
+            if (delta > 0.08) {
+              try {
+                v.currentTime = refTime;
+              } catch (e) {}
+            }
+          }
+        }, 250);
+      }
+
+      function waitForVideoReady(video, isUser) {
+        return new Promise((resolve) => {
+          if (video.readyState >= 2) {
+            resolve();
+            return;
+          }
+
+          const onReady = () => {
+            cleanup();
+            resolve();
+          };
+
+          const events = isUser
+            ? ["loadeddata", "canplay"]
+            : ["loadeddata", "canplaythrough"];
+
+          events.forEach((ev) => video.addEventListener(ev, onReady));
+
+          const timeout = window.setTimeout(() => {
+            cleanup();
+            resolve();
+          }, isUser ? 200 : 1000);
+
+          function cleanup() {
+            events.forEach((ev) =>
+              video.removeEventListener(ev, onReady)
+            );
+            window.clearTimeout(timeout);
           }
         });
       }
 
-      function switchBackToSpecs() {
-        stopSyncMonitor();
-        stopAndDisposeVideos();
-        restoreOriginalTextures();
-        specsPreviewBtn.disabled = true;
-        exampleVideoBtn.disabled = false;
+      async function activateVideoEntries(pendingEntries) {
+        if (!pendingEntries.length) return;
+
+        const uniqueVideos = [];
+        const isUserFlags = [];
+        const seen = new Set();
+
+        for (const entry of pendingEntries) {
+          if (!entry.video) continue;
+          if (seen.has(entry.video)) continue;
+          seen.add(entry.video);
+          uniqueVideos.push(entry.video);
+          isUserFlags.push(entry.isUser);
+        }
+
+        await Promise.all(
+          uniqueVideos.map((v, i) =>
+            waitForVideoReady(v, isUserFlags[i])
+          )
+        );
+
+        const readyVideos = uniqueVideos.filter((v) => v.readyState >= 2);
+        if (!readyVideos.length) {
+          console.warn("No ready videos, aborting activateVideoEntries");
+          return;
+        }
+
+        for (const v of readyVideos) {
+          try {
+            v.currentTime = 0;
+          } catch (e) {}
+        }
+
+        for (const entry of pendingEntries) {
+          if (entry.video.readyState < 2) continue;
+          entry.mat.map = entry.videoTexture;
+          entry.mat.needsUpdate = true;
+        }
+
+        await Promise.all(
+          readyVideos.map((v) =>
+            v.play().catch(() => {})
+          )
+        );
+
+        activeVideoEntries = pendingEntries.filter(
+          (e) => e.video.readyState >= 2
+        );
+        isUsingVideos = !!activeVideoEntries.length;
+        if (isUsingVideos) startSyncMonitor();
       }
 
-      // COLOR DEBUG
-      async function switchToProjectVideos() {
+      // Apply Preview (User-Videos) via Material-Prefix
+      async function switchToUserVideos() {
         if (!model) return;
-        console.log("DEBUG switchToProjectVideos() – color slots");
 
         stopSyncMonitor();
         stopAndDisposeVideos();
+
+        const hasAnyUserVideo =
+          (userVideos.inner && userVideos.inner.video) ||
+          (userVideos.outer && userVideos.outer.video) ||
+          (userVideos.floor && userVideos.floor.video);
+
+        if (!hasAnyUserVideo) {
+          updateButtonsForSpecsMode();
+          return;
+        }
+
+        const pendingEntries = [];
 
         model.traverse((child) => {
           if (!child.isMesh || !child.material) return;
@@ -549,45 +780,178 @@
           for (const mat of mats) {
             const matName = (mat.name || "").toLowerCase();
 
-            if (matName.startsWith("portal_inside_specs")) {
-              mat.map = null;
-              mat.color.set(0xff0000); // rot
-              mat.needsUpdate = true;
-            } else if (matName.startsWith("portal_outside_specs")) {
-              mat.map = null;
-              mat.color.set(0x00ff00); // grün
-              mat.needsUpdate = true;
-            } else if (matName.startsWith("portal_floor_specs")) {
-              mat.map = null;
-              mat.color.set(0x0000ff); // blau
-              mat.needsUpdate = true;
+            if (
+              userVideos.inner.video &&
+              matName.startsWith("portal_inside_specs")
+            ) {
+              pendingEntries.push({
+                mat,
+                video: userVideos.inner.video,
+                videoTexture: userVideos.inner.texture,
+                isUser: true
+              });
+            } else if (
+              userVideos.outer.video &&
+              matName.startsWith("portal_outside_specs")
+            ) {
+              pendingEntries.push({
+                mat,
+                video: userVideos.outer.video,
+                videoTexture: userVideos.outer.texture,
+                isUser: true
+              });
+            } else if (
+              userVideos.floor.video &&
+              matName.startsWith("portal_floor_specs")
+            ) {
+              pendingEntries.push({
+                mat,
+                video: userVideos.floor.video,
+                videoTexture: userVideos.floor.texture,
+                isUser: true
+              });
             }
           }
         });
 
-        specsPreviewBtn.disabled = false;
-        exampleVideoBtn.disabled = true;
+        console.log(
+          "pendingEntries User:",
+          pendingEntries.length,
+          pendingEntries
+        );
+
+        if (!pendingEntries.length) {
+          updateButtonsForSpecsMode();
+          return;
+        }
+
+        await activateVideoEntries(pendingEntries);
+        updateButtonsForUserMode();
       }
 
-      async function switchToUserVideos() {
-        console.log("DEBUG: user videos disabled");
-        return;
+      // Example Video (Projektvideos) via Material-Prefix
+      async function switchToProjectVideos() {
+        if (!model) return;
+
+        stopSyncMonitor();
+        stopAndDisposeVideos();
+
+        const pendingEntries = [];
+
+        model.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+
+          for (const mat of mats) {
+            const matName = (mat.name || "").toLowerCase();
+            let baseName = null;
+
+            if (matName.startsWith("portal_inside_specs")) {
+              baseName = "Portal_Inside_Specs";
+            } else if (matName.startsWith("portal_outside_specs")) {
+              baseName = "Portal_Outside_Specs";
+            } else if (matName.startsWith("portal_floor_specs")) {
+              baseName = "Portal_Floor_Specs";
+            } else {
+              continue;
+            }
+
+            const videoUrl = `models/${baseName}.mp4`;
+
+            const video = document.createElement("video");
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = "auto";
+            video.src = videoUrl;
+
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+
+            pendingEntries.push({
+              mat,
+              video,
+              videoTexture: texture,
+              isUser: false
+            });
+          }
+        });
+
+        console.log(
+          "pendingEntries Example:",
+          pendingEntries.length,
+          pendingEntries
+        );
+
+        if (!pendingEntries.length) {
+          updateButtonsForSpecsMode();
+          return;
+        }
+
+        await activateVideoEntries(pendingEntries);
+        updateButtonsForExampleMode();
+      }
+
+      function restoreOriginalTextures() {
+        if (!model) return;
+
+        model.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+
+          for (const mat of mats) {
+            const original = originalMaps.get(mat) || null;
+            mat.map = original;
+            if (mat.map) mat.map.needsUpdate = true;
+            mat.needsUpdate = true;
+          }
+        });
+      }
+
+      function switchBackToSpecs() {
+        stopSyncMonitor();
+        stopAndDisposeVideos();
+        restoreOriginalTextures();
+        updateButtonsForSpecsMode();
       }
 
       function updateButtonsForSpecsMode() {
         specsPreviewBtn.disabled = true;
         exampleVideoBtn.disabled = false;
+        applyPreviewBtn.disabled = false;
+      }
+
+      function updateButtonsForExampleMode() {
+        specsPreviewBtn.disabled = false;
+        exampleVideoBtn.disabled = true;
+        applyPreviewBtn.disabled = false;
+      }
+
+      function updateButtonsForUserMode() {
+        specsPreviewBtn.disabled = false;
+        exampleVideoBtn.disabled = false;
+        applyPreviewBtn.disabled = true;
       }
 
       specsPreviewBtn.addEventListener("click", () => {
         switchBackToSpecs();
       });
+
       exampleVideoBtn.addEventListener("click", () => {
         switchToProjectVideos();
       });
+
       applyPreviewBtn.addEventListener("click", () => {
         switchToUserVideos();
       });
+
       sweetspotBtn.addEventListener("click", () => {
         goToSweetspot();
       });
