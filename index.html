@@ -950,32 +950,51 @@
       gltfLoader.load(
         "Portal_mapped.glb",
        (gltf) => {
+(gltf) => {
   model = gltf.scene;
   setupModel(model);
 
-  // DEBUG: initialer PNG-Status
-  console.log("DEBUG after setupModel (initial PNG state)");
+  // Specs-PNGs im Viewer laden und an Materials binden
+  const texLoader = new THREE.TextureLoader();
+  const insideSpecsTex = texLoader.load("models/Portal_Inside_Specs.png");
+  insideSpecsTex.colorSpace = THREE.SRGBColorSpace;
+  insideSpecsTex.flipY = false;
+
+  const outsideSpecsTex = texLoader.load("models/Portal_Outside_Specs.png");
+  outsideSpecsTex.colorSpace = THREE.SRGBColorSpace;
+  outsideSpecsTex.flipY = false;
+
+  const floorSpecsTex = texLoader.load("models/Portal_Floor_Specs.png");
+  floorSpecsTex.colorSpace = THREE.SRGBColorSpace;
+  floorSpecsTex.flipY = false;
+
   model.traverse((child) => {
     if (!child.isMesh || !child.material) return;
-    const mats = Array.isArray(child.material)
-      ? child.material
-      : [child.material];
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
     for (const mat of mats) {
-      if (!mat) continue;
-      const hasMap = !!mat.map;
-      console.log(
-        "INIT MAT",
-        mat.name,
-        "hasMap:",
-        hasMap,
-        "mapType:",
-        hasMap && mat.map.constructor.name
-      );
+      const name = (mat.name || "").toLowerCase();
+
+      if (name.startsWith("portal_inside_specs")) {
+        mat.map = insideSpecsTex;
+        mat.needsUpdate = true;
+        originalMaps.set(mat, insideSpecsTex);
+      } else if (name.startsWith("portal_outside_specs")) {
+        mat.map = outsideSpecsTex;
+        mat.needsUpdate = true;
+        originalMaps.set(mat, outsideSpecsTex);
+      } else if (name.startsWith("portal_floor_specs")) {
+        mat.map = floorSpecsTex;
+        mat.needsUpdate = true;
+        originalMaps.set(mat, floorSpecsTex);
+      }
     }
   });
 
+  console.log("Specs PNGs assigned in viewer");
+
   loadingOverlay.classList.add("hidden");
-  updateButtonsForSpecsMode();
+  updateButtonsForSpecsMode();   // startet mit PNG-Specs
 },
         undefined,
         (error) => {
