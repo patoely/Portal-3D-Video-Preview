@@ -18,14 +18,11 @@
     <style>
       :root {
         color-scheme: dark;
-        --bg: #111111;
         --panel-bg: rgba(0, 0, 0, 0.7);
         --panel-border: rgba(255, 255, 255, 0.08);
         --accent: #4cc3ff;
-        --accent-soft: rgba(76, 195, 255, 0.2);
         --text: #f3f3f3;
         --muted: #999999;
-        --danger: #ff5c5c;
       }
 
       * {
@@ -414,7 +411,6 @@
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
       import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-      // DOM References
       const viewerContainer = document.getElementById("viewerContainer");
       const loadingOverlay = document.getElementById("loadingOverlay");
       const loadingStatus = document.getElementById("loadingStatus");
@@ -426,17 +422,15 @@
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
 
-      // Three.js Core
       const scene = new THREE.Scene();
-      // Optional Fog für etwas mehr Tiefe
       scene.fog = new THREE.Fog(0x05060a, 2500, 6000);
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
         powerPreference: "high-performance",
-        alpha: true // Canvas transparent, Pseudo-HDRI aus CSS sichtbar
+        alpha: true
       });
-      renderer.setClearColor(0x000000, 0); // keine feste Hintergrundfarbe
+      renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -454,7 +448,6 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // Sweetspot Pose
       function goToSweetspot() {
         console.log("goToSweetspot()");
         camera.position.set(
@@ -466,7 +459,7 @@
         controls.update();
       }
 
-      // Lights & Environment (leicht „studio“/Pseudo-HDRI abgestimmt)
+      // Lights
       const hemiLight = new THREE.HemisphereLight(0xf0f4ff, 0x1c1f25, 0.9);
       hemiLight.position.set(0, 1, 0);
       scene.add(hemiLight);
@@ -489,19 +482,27 @@
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
       scene.add(ambientLight);
 
-      // Dezenter Grid + Shadow Plane, falls du Ground willst:
-      const grid = new THREE.GridHelper(4000, 40, 0x555555, 0x333333);
-      grid.position.y = 0;
-      scene.add(grid);
-
+      // Weißer Boden ohne Grid
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
-      const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+
+      // Weißer Untergrund
+      const floorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const floorMesh = new THREE.Mesh(shadowPlaneGeo, floorMat);
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.y = -0.01;
+      scene.add(floorMesh);
+
+      // Shadow‑Plane darüber
+      const shadowMat = new THREE.ShadowMaterial({
+        color: 0x000000,
+        opacity: 0.25
+      });
       const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowMat);
       shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.position.y = 0;
       shadowPlane.receiveShadow = true;
       scene.add(shadowPlane);
 
-      // Resize Handling
       function onResize() {
         const w = window.innerWidth;
         const h = window.innerHeight;
@@ -512,7 +513,6 @@
       window.addEventListener("resize", onResize);
       onResize();
 
-      // Loading Manager
       const loadingManager = new THREE.LoadingManager();
 
       loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
@@ -530,7 +530,6 @@
         loadingStatus.textContent = `Fehler beim Laden: ${url}`;
       };
 
-      // Texturpfade normalisieren (alle Texturen aus /models/)
       loadingManager.setURLModifier((url) => {
         const lower = url.toLowerCase();
         if (
@@ -547,11 +546,9 @@
         return url;
       });
 
-      // GLTF Loader
       const gltfLoader = new GLTFLoader(loadingManager);
       gltfLoader.setPath("models/");
 
-      // Model & Materials
       let model = null;
       const originalMaps = new WeakMap();
 
@@ -618,7 +615,6 @@
           floorMaterials.length
         );
 
-        // Bounding Box, Re‑Center & auf Boden setzen
         const box = new THREE.Box3().setFromObject(root);
         const center = new THREE.Vector3();
         box.getCenter(center);
@@ -628,12 +624,12 @@
         root.position.y -= minY;
 
         shadowPlane.position.y = 0;
+        floorMesh.position.y = -0.01;
 
         scene.add(root);
         goToSweetspot();
       }
 
-      // Video State
       const userVideos = {
         inner: { video: null, texture: null, url: null, isUser: true },
         outer: { video: null, texture: null, url: null, isUser: true },
@@ -644,7 +640,6 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
-      // User Upload Handling
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
         if (!file) return;
@@ -694,7 +689,6 @@
         handleUserVideoUpload("floor", floorVideoInput)
       );
 
-      // Video Sync Helpers
       function stopSyncMonitor() {
         if (syncIntervalId !== null) {
           console.log("stopSyncMonitor()");
@@ -838,7 +832,7 @@
         startSyncMonitor();
       }
 
-      // Mode: Switch to User Videos
+      // Apply Preview (User-Videos, Basename = Portal_*_Specs)
       async function switchToUserVideos() {
         if (!model) return;
         console.log("switchToUserVideos()");
@@ -872,13 +866,11 @@
             const src = baseMap.image.src;
             const fileName = src.split("/").pop();
             if (!fileName) continue;
-            const baseName = fileName
-              .replace(/\.[^/.]+$/, "")
-              .toLowerCase();
+            const baseName = fileName.replace(/\.[^/.]+$/, "");
 
             if (
               userVideos.inner.video &&
-              baseName === "portal_inside_specs"
+              baseName === "Portal_Inside_Specs"
             ) {
               pendingEntries.push({
                 mat,
@@ -888,7 +880,7 @@
               });
             } else if (
               userVideos.outer.video &&
-              baseName === "portal_outside_specs"
+              baseName === "Portal_Outside_Specs"
             ) {
               pendingEntries.push({
                 mat,
@@ -898,7 +890,7 @@
               });
             } else if (
               userVideos.floor.video &&
-              baseName === "portal_floor_specs"
+              baseName === "Portal_Floor_Specs"
             ) {
               pendingEntries.push({
                 mat,
@@ -925,66 +917,78 @@
         updateButtonsForUserMode();
       }
 
-  // Mode: Switch to Project Example Videos (Hardcode-Test)
-async function switchToProjectVideos() {
-  if (!model) return;
-  console.log("switchToProjectVideos() – HARDCODE TEST");
+      // Example Video (Projektvideos, Basename = Portal_*_Specs)
+      async function switchToProjectVideos() {
+        if (!model) return;
+        console.log("switchToProjectVideos() – Example Video clicked");
 
-  stopSyncMonitor();
-  stopAndDisposeVideos();
+        stopSyncMonitor();
+        stopAndDisposeVideos();
 
-  // Nimm ein existierendes MP4 aus models/
-  const videoUrl = "models/portal_inside_specs.mp4"; // ggf. Pfad/Name anpassen
-  console.log("Using hardcoded videoUrl:", videoUrl);
+        const pendingEntries = [];
 
-  const video = document.createElement("video");
-  video.loop = true;
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = "auto";
-  video.src = videoUrl;
+        model.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
 
-  const texture = new THREE.VideoTexture(video);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
+          for (const mat of mats) {
+            const baseMap = originalMaps.get(mat);
+            if (!baseMap || !baseMap.image || !baseMap.image.src) continue;
 
-  const pendingEntries = [];
-  model.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
-    const mats = Array.isArray(child.material)
-      ? child.material
-      : [child.material];
+            const src = baseMap.image.src;
+            const fileName = src.split("/").pop();
+            if (!fileName) continue;
+            const baseName = fileName.replace(/\.[^/.]+$/, "");
 
-    for (const mat of mats) {
-      pendingEntries.push({
-        mat,
-        video,
-        videoTexture: texture,
-        isUser: false
-      });
-    }
-  });
+            const videoUrl = `models/${baseName}.mp4`;
+            console.log(
+              "Example mapping via baseMap.image.src",
+              src,
+              "→ baseName:",
+              baseName,
+              "videoUrl:",
+              videoUrl
+            );
 
-  console.log(
-    "HARDCODE pendingEntries:",
-    pendingEntries.length,
-    pendingEntries
-  );
+            const video = document.createElement("video");
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = "auto";
+            video.src = videoUrl;
 
-  if (!pendingEntries.length) {
-    console.warn("No mesh materials found for hardcode test.");
-    updateButtonsForSpecsMode();
-    return;
-  }
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
 
-  await activateVideoEntries(pendingEntries);
-  updateButtonsForExampleMode();
-}
+            pendingEntries.push({
+              mat,
+              video,
+              videoTexture: texture,
+              isUser: false
+            });
+          }
+        });
 
+        console.log(
+          "pendingEntries Example:",
+          pendingEntries.length,
+          pendingEntries
+        );
 
-      // Specs Preview: Original Textures
+        if (!pendingEntries.length) {
+          updateButtonsForSpecsMode();
+          return;
+        }
+
+        await activateVideoEntries(pendingEntries);
+        updateButtonsForExampleMode();
+      }
+
       function restoreOriginalTextures() {
         if (!model) return;
         console.log("restoreOriginalTextures()");
@@ -1012,7 +1016,6 @@ async function switchToProjectVideos() {
         updateButtonsForSpecsMode();
       }
 
-      // Button State Management
       function updateButtonsForSpecsMode() {
         console.log("Buttons → Specs mode");
         specsPreviewBtn.disabled = true;
@@ -1034,7 +1037,6 @@ async function switchToProjectVideos() {
         applyPreviewBtn.disabled = true;
       }
 
-      // Button Events
       specsPreviewBtn.addEventListener("click", () => {
         console.log("Specs Preview clicked");
         switchBackToSpecs();
@@ -1055,7 +1057,6 @@ async function switchToProjectVideos() {
         goToSweetspot();
       });
 
-      // Animation Loop
       function animate() {
         requestAnimationFrame(animate);
         controls.update();
@@ -1063,7 +1064,6 @@ async function switchToProjectVideos() {
       }
       animate();
 
-      // Load Model
       loadingStatus.textContent = "Lade Model…";
       gltfLoader.load(
         "Portal_mapped.glb",
@@ -1072,7 +1072,6 @@ async function switchToProjectVideos() {
           model = gltf.scene;
           setupModel(model);
           loadingOverlay.classList.add("hidden");
-          // initial: Specs Preview aktiv, Buttons wie Specs Mode
           updateButtonsForSpecsMode();
         },
         undefined,
