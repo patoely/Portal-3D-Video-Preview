@@ -189,13 +189,13 @@
         cursor: pointer;
       }
 
-      #brightnessLabel {
+      #luminosityLabel {
         font-size: 11px;
         color: var(--muted);
         margin-right: 4px;
       }
 
-      #brightnessSlider {
+      #luminositySlider {
         width: 120px;
       }
 
@@ -327,14 +327,14 @@
         </div>
 
         <div class="group">
-          <span id="brightnessLabel">Brightness</span>
+          <span id="luminosityLabel">Luminosity</span>
           <input
-            id="brightnessSlider"
+            id="luminositySlider"
             type="range"
             min="0"
             max="50"
             step="1"
-            value="15"
+            value="2"
           />
         </div>
 
@@ -373,7 +373,7 @@
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
-          <li>Brightness: Leichte Screen‑Helligkeit (Emissive).</li>
+          <li>Luminosity: Screen‑Leuchtkraft (Emissive).</li>
         </ul>
       </div>
 
@@ -398,7 +398,7 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
-      const brightnessSlider = document.getElementById("brightnessSlider");
+      const luminositySlider = document.getElementById("luminositySlider");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -603,14 +603,14 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
-      let brightnessEmissive = 0.15; // Startwert = Slider 15 / 100
+      // Luminosity = Emissive-Intensität der Screens
+      let luminosity = 0.02; // sehr niedrig zum Start
 
-      brightnessSlider.addEventListener("input", () => {
-        const v = Number(brightnessSlider.value); // 0–50
-        brightnessEmissive = v / 100;             // 0.0–0.5
-        // Laufende Video-Mats live aktualisieren
+      luminositySlider.addEventListener("input", () => {
+        const v = Number(luminositySlider.value); // 0–50
+        luminosity = v / 100;                     // 0.0–0.5
         for (const entry of activeVideoEntries) {
-          entry.mat.emissiveIntensity = brightnessEmissive;
+          entry.mat.emissiveIntensity = luminosity;
           entry.mat.needsUpdate = true;
         }
       });
@@ -723,11 +723,10 @@
             console.warn("video play() threw", video.src, e);
           }
 
-          // Screen mit leichtem, regelbarem Leuchten
           entry.mat.map = tex;
           entry.mat.emissiveMap = null;
           entry.mat.emissive = new THREE.Color(0xffffff);
-          entry.mat.emissiveIntensity = brightnessEmissive;
+          entry.mat.emissiveIntensity = luminosity;
           entry.mat.roughness = 0.5;
           entry.mat.metalness = 0.0;
           entry.mat.needsUpdate = true;
