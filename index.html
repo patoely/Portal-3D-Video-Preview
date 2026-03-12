@@ -404,7 +404,7 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // ca. 45° von rechts
+      // wie zuvor: ~45° von rechts
       function goToSweetspot() {
         camera.position.set(900, 260, 900);
         controls.target.set(0, 200, 0);
@@ -562,7 +562,6 @@
 
         scene.add(root);
 
-        // Modell stark skalieren
         root.scale.set(100, 100, 100);
         root.updateMatrixWorld(true);
 
@@ -735,25 +734,31 @@
           try { v.currentTime = 0; } catch (e) {}
         }
 
-        // Autoplay robust starten
-    for (const v of readyVideos) {
-  try {
-    console.log("start video", v.src, "readyState:", v.readyState);
-    const playPromise = v.play();
-    if (playPromise && typeof playPromise.then === "function") {
-      playPromise
-        .then(() => {
-          console.log("video playing", v.src);
-        })
-        .catch((err) => {
-          console.warn("video play() failed", v.src, err);
-        });
-    }
-  } catch (e) {
-    console.warn("video play() threw", v.src, e);
-  }
-}
+        for (const v of readyVideos) {
+          try {
+            console.log("start video", v.src, "readyState:", v.readyState);
+            const playPromise = v.play();
+            if (playPromise && typeof playPromise.then === "function") {
+              playPromise
+                .then(() => {
+                  console.log("video playing", v.src);
+                })
+                .catch((err) => {
+                  console.warn("video play() failed", v.src, err);
+                });
+            }
+          } catch (e) {
+            console.warn("video play() threw", v.src, e);
+          }
+        }
 
+        for (const entry of pendingEntries) {
+          if (entry.video.readyState < 2) continue;
+          entry.mat.emissive = new THREE.Color(0xffffff);
+          entry.mat.emissiveIntensity = 1.0;
+          entry.mat.map = entry.videoTexture;
+          entry.mat.needsUpdate = true;
+        }
 
         activeVideoEntries = pendingEntries.filter(
           (e) => e.video.readyState >= 2
