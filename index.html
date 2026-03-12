@@ -604,7 +604,7 @@
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.generateMipmaps = false;
-        texture.flipY = false; // wichtig für glTF-UVs [web:225][web:234]
+        texture.flipY = false;
 
         userVideos[slot] = { video, texture, url, isUser: true };
 
@@ -673,9 +673,7 @@
           const video = entry.video;
           const tex = entry.videoTexture;
 
-          try {
-            video.currentTime = 0;
-          } catch (e) {}
+          try { video.currentTime = 0; } catch (e) {}
 
           try {
             const p = video.play();
@@ -688,10 +686,13 @@
             console.warn("video play() threw", video.src, e);
           }
 
-          entry.mat.map = null;
-          entry.mat.emissiveMap = tex;
-          entry.mat.emissive = new THREE.Color(0xffffff);
-          entry.mat.emissiveIntensity = 1.0;
+          // mattes Projektions-Material
+          entry.mat.map = tex;
+          entry.mat.emissiveMap = null;
+          entry.mat.emissive = new THREE.Color(0x000000);
+          entry.mat.emissiveIntensity = 0.0;
+          entry.mat.roughness = 0.5;
+          entry.mat.metalness = 0.0;
           entry.mat.needsUpdate = true;
         }
 
@@ -832,7 +833,7 @@
             texture.minFilter = THREE.LinearFilter;
             texture.magFilter = THREE.LinearFilter;
             texture.generateMipmaps = false;
-            texture.flipY = false; // wie PNG-Specs gemappt [web:225][web:234]
+            texture.flipY = false;
 
             pendingEntries.push({
               mat,
