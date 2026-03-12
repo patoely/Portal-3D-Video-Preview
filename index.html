@@ -993,60 +993,64 @@
       animate();
 
       loadingStatus.textContent = "Lade Model…";
-      gltfLoader.load(
-        "Portal_mapped.glb",
-        (gltf) => {
-          model = gltf.scene;
-          setupModel(model);
+     gltfLoader.load(
+  "Portal_mapped.glb",
+  (gltf) => {
+    model = gltf.scene;
+    setupModel(model);
 
-          const texLoader = new THREE.TextureLoader(loadingManager);
+    // Für Debug von außen sichtbar machen
+    window.model = model;
 
-          const insideSpecsTex = texLoader.load("Portal_Inside_Specs.png");
-          insideSpecsTex.colorSpace = THREE.SRGBColorSpace;
-          insideSpecsTex.flipY = false;
+    const texLoader = new THREE.TextureLoader(loadingManager);
 
-          const outsideSpecsTex = texLoader.load("Portal_Outside_Specs.png");
-          outsideSpecsTex.colorSpace = THREE.SRGBColorSpace;
-          outsideSpecsTex.flipY = false;
+    const insideSpecsTex = texLoader.load("Portal_Inside_Specs.png");
+    insideSpecsTex.colorSpace = THREE.SRGBColorSpace;
+    insideSpecsTex.flipY = false;
 
-          const floorSpecsTex = texLoader.load("Portal_Floor_Specs.png");
-          floorSpecsTex.colorSpace = THREE.SRGBColorSpace;
-          floorSpecsTex.flipY = false;
+    const outsideSpecsTex = texLoader.load("Portal_Outside_Specs.png");
+    outsideSpecsTex.colorSpace = THREE.SRGBColorSpace;
+    outsideSpecsTex.flipY = false;
 
-          model.traverse((child) => {
-            if (!child.isMesh || !child.material) return;
-            const mats = Array.isArray(child.material)
-              ? child.material
-              : [child.material];
+    const floorSpecsTex = texLoader.load("Portal_Floor_Specs.png");
+    floorSpecsTex.colorSpace = THREE.SRGBColorSpace;
+    floorSpecsTex.flipY = false;
 
-            for (const mat of mats) {
-              const name = (mat.name || "").toLowerCase();
+    model.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const mats = Array.isArray(child.material)
+        ? child.material
+        : [child.material];
 
-              if (name.startsWith("portal_inside_specs")) {
-                mat.map = insideSpecsTex;
-                mat.needsUpdate = true;
-                originalMaps.set(mat, insideSpecsTex);
-              } else if (name.startsWith("portal_outside_specs")) {
-                mat.map = outsideSpecsTex;
-                mat.needsUpdate = true;
-                originalMaps.set(mat, outsideSpecsTex);
-              } else if (name.startsWith("portal_floor_specs")) {
-                mat.map = floorSpecsTex;
-                mat.needsUpdate = true;
-                originalMaps.set(mat, floorSpecsTex);
-              }
-            }
-          });
+      for (const mat of mats) {
+        const name = (mat.name || "").toLowerCase();
 
-          loadingOverlay.classList.add("hidden");
-          updateButtonsForSpecsMode();
-        },
-        undefined,
-        (error) => {
-          console.error("GLB load error", error);
-          loadingStatus.textContent = "Fehler beim Laden des Modells.";
+        if (name.startsWith("portal_inside_specs")) {
+          mat.map = insideSpecsTex;
+          mat.needsUpdate = true;
+          originalMaps.set(mat, insideSpecsTex);
+        } else if (name.startsWith("portal_outside_specs")) {
+          mat.map = outsideSpecsTex;
+          mat.needsUpdate = true;
+          originalMaps.set(mat, outsideSpecsTex);
+        } else if (name.startsWith("portal_floor_specs")) {
+          mat.map = floorSpecsTex;
+          mat.needsUpdate = true;
+          originalMaps.set(mat, floorSpecsTex);
         }
-      );
+      }
+    });
+
+    loadingOverlay.classList.add("hidden");
+    updateButtonsForSpecsMode();
+  },
+  undefined,
+  (error) => {
+    console.error("GLB load error", error);
+    loadingStatus.textContent = "Fehler beim Laden des Modells.";
+  }
+);
+
     </script>
   </body>
 </html>
