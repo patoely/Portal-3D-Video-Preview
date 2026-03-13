@@ -314,9 +314,6 @@
           <button id="sweetspotBtn" class="tool-btn" type="button">
             Sweetspot View
           </button>
-          <button id="logCameraBtn" class="tool-btn" type="button">
-            Log View
-          </button>
         </div>
 
         <div class="group">
@@ -354,7 +351,6 @@
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
-          <li>Log View: Position/Target für Sweetspot in Konsole.</li>
         </ul>
       </div>
 
@@ -379,7 +375,6 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
-      const logCameraBtn = document.getElementById("logCameraBtn");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -410,10 +405,10 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // Sweetspot (vorläufig, wird geloggt und dann finalisiert)
+      // finaler Sweetspot: Position aus letzter Version, Target aus deinem Log
       function goToSweetspot() {
         camera.position.set(596.88, 147.29, -590.89);
-        controls.target.set(16.54, 167.83, 16.38);
+        controls.target.set(13.78, 147.94, 13.52);
         controls.update();
       }
 
@@ -584,7 +579,6 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
-      // Fester Monitor-Glow-Default
       const LUMINOSITY_DEFAULT = 0.14;
 
       function handleUserVideoUpload(slot, input) {
@@ -695,7 +689,6 @@
             console.warn("video play() threw", video.src, e);
           }
 
-          // Monitor-Look: Video als Farbe + Emissive-Glow aus derselben Textur
           entry.mat.map = tex;
           entry.mat.emissiveMap = tex;
           entry.mat.emissive = new THREE.Color(0xffffff);
@@ -982,17 +975,6 @@
 
       sweetspotBtn.addEventListener("click", () => {
         goToSweetspot();
-      });
-
-      logCameraBtn.addEventListener("click", () => {
-        const p = camera.position;
-        const t = controls.target;
-        console.log(
-          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
-        );
-        console.log(
-          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
-        );
       });
 
       function animate() {
