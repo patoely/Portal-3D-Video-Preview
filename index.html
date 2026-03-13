@@ -199,6 +199,14 @@
         width: 120px;
       }
 
+      #luminosityValue {
+        font-size: 11px;
+        color: var(--muted);
+        margin-left: 4px;
+        min-width: 40px;
+        text-align: right;
+      }
+
       #infoPanel {
         position: absolute;
         left: 16px;
@@ -334,8 +342,9 @@
             min="0"
             max="50"
             step="1"
-            value="2"
+            value="20"
           />
+          <span id="luminosityValue">0.20</span>
         </div>
 
         <div class="group">
@@ -373,7 +382,7 @@
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
-          <li>Luminosity: Screen‑Leuchtkraft (Emissive).</li>
+          <li>Luminosity: Monitor‑Strahlkraft der Screens.</li>
         </ul>
       </div>
 
@@ -399,6 +408,7 @@
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
       const luminositySlider = document.getElementById("luminositySlider");
+      const luminosityValue = document.getElementById("luminosityValue");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -429,7 +439,6 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // finaler Sweetspot (deine Werte)
       function goToSweetspot() {
         camera.position.set(596.88, 147.29, -590.89);
         controls.target.set(16.54, 167.83, 16.38);
@@ -603,12 +612,14 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
-      // Luminosity = Emissive-Intensität der Screens
-      let luminosity = 0.02; // sehr niedrig zum Start
+      // Luminosity = Emissive-Intensität der Screens (Monitor-Glow)
+      let luminosity = Number(luminositySlider.value) / 100; // Default 0.20
+      luminosityValue.textContent = luminosity.toFixed(2);
 
       luminositySlider.addEventListener("input", () => {
         const v = Number(luminositySlider.value); // 0–50
         luminosity = v / 100;                     // 0.0–0.5
+        luminosityValue.textContent = luminosity.toFixed(2);
         for (const entry of activeVideoEntries) {
           entry.mat.emissiveIntensity = luminosity;
           entry.mat.needsUpdate = true;
@@ -723,8 +734,9 @@
             console.warn("video play() threw", video.src, e);
           }
 
+          // Monitor-Look: Video als Farbe + Emissive-Glow aus derselben Textur
           entry.mat.map = tex;
-          entry.mat.emissiveMap = null;
+          entry.mat.emissiveMap = tex;
           entry.mat.emissive = new THREE.Color(0xffffff);
           entry.mat.emissiveIntensity = luminosity;
           entry.mat.roughness = 0.5;
