@@ -405,35 +405,23 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // finaler Sweetspot: Position aus letzter Version, Target aus deinem Log
+      // finaler Sweetspot
       function goToSweetspot() {
         camera.position.set(596.88, 147.29, -590.89);
         controls.target.set(13.78, 147.94, 13.52);
         controls.update();
       }
 
+      // weiches, richtungsloses Licht-Setup
       const hemiLight = new THREE.HemisphereLight(0xb0b0b0, 0x4a4a4a, 0.9);
       hemiLight.position.set(0, 1, 0);
       scene.add(hemiLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-      dirLight.position.set(300, 600, 200);
-      dirLight.castShadow = true;
-      dirLight.shadow.mapSize.set(2048, 2048);
-      dirLight.visible = false;
-
-      const d = 1200;
-      dirLight.shadow.camera.left = -d;
-      dirLight.shadow.camera.right = d;
-      dirLight.shadow.camera.top = d;
-      dirLight.shadow.camera.bottom = -d;
-      scene.add(dirLight);
-
-      const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      const fillLight = new THREE.DirectionalLight(0xffffff, 0.25);
       fillLight.position.set(-600, 400, -500);
       scene.add(fillLight);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
       scene.add(ambientLight);
 
       const shadowPlaneGeo = new THREE.PlaneGeometry(8000, 8000);
@@ -543,15 +531,6 @@
           }
         });
 
-        console.log(
-          "innerMaterials:",
-          innerMaterials.length,
-          "outer:",
-          outerMaterials.length,
-          "floor:",
-          floorMaterials.length
-        );
-
         const box = new THREE.Box3().setFromObject(root);
         const center = new THREE.Vector3();
         box.getCenter(center);
@@ -586,15 +565,10 @@
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
         if (!file) return;
-        console.log("User upload for slot", slot, file.name);
 
         const current = userVideos[slot];
-        if (current && current.url) {
-          URL.revokeObjectURL(current.url);
-        }
-        if (current && current.texture) {
-          current.texture.dispose();
-        }
+        if (current && current.url) URL.revokeObjectURL(current.url);
+        if (current && current.texture) current.texture.dispose();
 
         const url = URL.createObjectURL(file);
         const video = document.createElement("video");
@@ -612,7 +586,6 @@
         texture.flipY = false;
 
         userVideos[slot] = { video, texture, url, isUser: true };
-
         input.value = "";
       }
 
@@ -770,12 +743,6 @@
           }
         });
 
-        console.log(
-          "pendingEntries User:",
-          pendingEntries.length,
-          pendingEntries
-        );
-
         if (!pendingEntries.length) {
           updateButtonsForSpecsMode();
           return;
@@ -847,12 +814,6 @@
             });
           }
         });
-
-        console.log(
-          "pendingEntries Example:",
-          pendingEntries.length,
-          pendingEntries
-        );
 
         if (!pendingEntries.length) {
           updateButtonsForSpecsMode();
