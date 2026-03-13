@@ -189,24 +189,6 @@
         cursor: pointer;
       }
 
-      #luminosityLabel {
-        font-size: 11px;
-        color: var(--muted);
-        margin-right: 4px;
-      }
-
-      #luminositySlider {
-        width: 120px;
-      }
-
-      #luminosityValue {
-        font-size: 11px;
-        color: var(--muted);
-        margin-left: 4px;
-        min-width: 40px;
-        text-align: right;
-      }
-
       #infoPanel {
         position: absolute;
         left: 16px;
@@ -332,19 +314,9 @@
           <button id="sweetspotBtn" class="tool-btn" type="button">
             Sweetspot View
           </button>
-        </div>
-
-        <div class="group">
-          <span id="luminosityLabel">Luminosity</span>
-          <input
-            id="luminositySlider"
-            type="range"
-            min="0"
-            max="50"
-            step="1"
-            value="20"
-          />
-          <span id="luminosityValue">0.20</span>
+          <button id="logCameraBtn" class="tool-btn" type="button">
+            Log View
+          </button>
         </div>
 
         <div class="group">
@@ -382,7 +354,7 @@
           <li>Maus: Linksklick drehen, Rechtsklick schwenken, Scroll zoom.</li>
           <li>Example: Projekt‑Videos pro Slot.</li>
           <li>Apply: eigene Upload‑Videos pro Slot.</li>
-          <li>Luminosity: Monitor‑Strahlkraft der Screens.</li>
+          <li>Log View: Position/Target für Sweetspot in Konsole.</li>
         </ul>
       </div>
 
@@ -407,8 +379,7 @@
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotBtn = document.getElementById("sweetspotBtn");
-      const luminositySlider = document.getElementById("luminositySlider");
-      const luminosityValue = document.getElementById("luminosityValue");
+      const logCameraBtn = document.getElementById("logCameraBtn");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -439,6 +410,7 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
+      // Sweetspot (vorläufig, wird geloggt und dann finalisiert)
       function goToSweetspot() {
         camera.position.set(596.88, 147.29, -590.89);
         controls.target.set(16.54, 167.83, 16.38);
@@ -612,19 +584,8 @@
       let isUsingVideos = false;
       let syncIntervalId = null;
 
-      // Luminosity = Emissive-Intensität der Screens (Monitor-Glow)
-      let luminosity = Number(luminositySlider.value) / 100; // Default 0.20
-      luminosityValue.textContent = luminosity.toFixed(2);
-
-      luminositySlider.addEventListener("input", () => {
-        const v = Number(luminositySlider.value); // 0–50
-        luminosity = v / 100;                     // 0.0–0.5
-        luminosityValue.textContent = luminosity.toFixed(2);
-        for (const entry of activeVideoEntries) {
-          entry.mat.emissiveIntensity = luminosity;
-          entry.mat.needsUpdate = true;
-        }
-      });
+      // Fester Monitor-Glow-Default
+      const LUMINOSITY_DEFAULT = 0.14;
 
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
@@ -738,7 +699,7 @@
           entry.mat.map = tex;
           entry.mat.emissiveMap = tex;
           entry.mat.emissive = new THREE.Color(0xffffff);
-          entry.mat.emissiveIntensity = luminosity;
+          entry.mat.emissiveIntensity = LUMINOSITY_DEFAULT;
           entry.mat.roughness = 0.5;
           entry.mat.metalness = 0.0;
           entry.mat.needsUpdate = true;
@@ -1021,6 +982,17 @@
 
       sweetspotBtn.addEventListener("click", () => {
         goToSweetspot();
+      });
+
+      logCameraBtn.addEventListener("click", () => {
+        const p = camera.position;
+        const t = controls.target;
+        console.log(
+          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
+        );
+        console.log(
+          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
+        );
       });
 
       function animate() {
