@@ -416,9 +416,11 @@
       }
 
       function goToSweetspotBack() {
-        controls.target.set(2.71, 18.23, 27.82);
-        controls.update();
-      }
+  camera.position.set(2.71, 18.23, 27.82);
+  controls.target.set(2.71, 18.23, 27.82);
+  controls.update();
+}
+
 
       const hemiLight = new THREE.HemisphereLight(0xb0b0b0, 0x4a4a4a, 0.9);
       hemiLight.position.set(0, 1, 0);
