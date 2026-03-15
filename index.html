@@ -311,12 +311,12 @@
             Example Preview
           </button>
 
-          <button id="sweetspotBtn" class="tool-btn" type="button">
-            Sweetspot View
+          <button id="sweetspotFrontBtn" class="tool-btn" type="button">
+            Sweetspot View Front
           </button>
 
-          <button id="logCameraBtn" class="tool-btn" type="button">
-            Log View
+          <button id="sweetspotBackBtn" class="tool-btn" type="button">
+            Sweetspot View Back
           </button>
 
           <div class="file-slot">
@@ -377,8 +377,8 @@
       const specsPreviewBtn = document.getElementById("specsPreviewBtn");
       const exampleVideoBtn = document.getElementById("exampleVideoBtn");
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
-      const sweetspotBtn = document.getElementById("sweetspotBtn");
-      const logCameraBtn = document.getElementById("logCameraBtn");
+      const sweetspotFrontBtn = document.getElementById("sweetspotFrontBtn");
+      const sweetspotBackBtn = document.getElementById("sweetspotBackBtn");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -409,9 +409,14 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      function goToSweetspot() {
+      function goToSweetspotFront() {
         camera.position.set(596.88, 147.29, -590.89);
         controls.target.set(13.78, 147.94, 13.52);
+        controls.update();
+      }
+
+      function goToSweetspotBack() {
+        controls.target.set(2.71, 18.23, 27.82);
         controls.update();
       }
 
@@ -560,7 +565,7 @@
         root.scale.set(100, 100, 100);
         root.updateMatrixWorld(true);
 
-        goToSweetspot();
+        goToSweetspotFront();
       }
 
       const userVideos = {
@@ -932,19 +937,12 @@
         switchToUserVideos();
       });
 
-      sweetspotBtn.addEventListener("click", () => {
-        goToSweetspot();
+      sweetspotFrontBtn.addEventListener("click", () => {
+        goToSweetspotFront();
       });
 
-      logCameraBtn.addEventListener("click", () => {
-        const p = camera.position;
-        const t = controls.target;
-        console.log(
-          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
-        );
-        console.log(
-          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
-        );
+      sweetspotBackBtn.addEventListener("click", () => {
+        goToSweetspotBack();
       });
 
       function animate() {
