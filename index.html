@@ -319,6 +319,10 @@
             Sweetspot View Back
           </button>
 
+          <button id="logCameraBtn" class="tool-btn" type="button">
+            Log View
+          </button>
+
           <div class="file-slot">
             <span class="file-slot-label">Inner</span>
             <label class="file-input-wrapper">
@@ -379,6 +383,7 @@
       const applyPreviewBtn = document.getElementById("applyPreviewBtn");
       const sweetspotFrontBtn = document.getElementById("sweetspotFrontBtn");
       const sweetspotBackBtn = document.getElementById("sweetspotBackBtn");
+      const logCameraBtn = document.getElementById("logCameraBtn");
       const innerVideoInput = document.getElementById("innerVideoInput");
       const outerVideoInput = document.getElementById("outerVideoInput");
       const floorVideoInput = document.getElementById("floorVideoInput");
@@ -416,11 +421,11 @@
       }
 
       function goToSweetspotBack() {
-  camera.position.set(2.71, 18.23, 27.82);
-  controls.target.set(2.71, 18.23, 27.82);
-  controls.update();
-}
-
+        // Platzhalter – nach dem Log ersetzt du diese Werte mit deinen
+        camera.position.set(2.71, 18.23, 27.82);
+        controls.target.set(2.71, 18.23, 27.82);
+        controls.update();
+      }
 
       const hemiLight = new THREE.HemisphereLight(0xb0b0b0, 0x4a4a4a, 0.9);
       hemiLight.position.set(0, 1, 0);
@@ -945,6 +950,17 @@
 
       sweetspotBackBtn.addEventListener("click", () => {
         goToSweetspotBack();
+      });
+
+      logCameraBtn.addEventListener("click", () => {
+        const p = camera.position;
+        const t = controls.target;
+        console.log(
+          `camera.position.set(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)});`
+        );
+        console.log(
+          `controls.target.set(${t.x.toFixed(2)}, ${t.y.toFixed(2)}, ${t.z.toFixed(2)});`
+        );
       });
 
       function animate() {
