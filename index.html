@@ -14,7 +14,6 @@
       }
     </script>
 
-    
     <style>
       :root {
         color-scheme: dark;
@@ -25,9 +24,12 @@
         --muted: #999999;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         height: 100%;
@@ -41,9 +43,21 @@
         color: var(--text);
       }
 
-      #app { position: relative; width: 100vw; height: 100vh; }
-      #viewerContainer { position: absolute; inset: 0; overflow: hidden; }
-      canvas { display: block; }
+      #app {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #viewerContainer {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      canvas {
+        display: block;
+      }
 
       #toolbar {
         position: absolute;
@@ -85,7 +99,8 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7),
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.7),
           0 6px 18px rgba(0, 0, 0, 0.5);
         transition:
           background 0.15s ease,
@@ -101,7 +116,8 @@
         height: 7px;
         border-radius: 50%;
         background: var(--accent);
-        box-shadow: 0 0 0 1px rgba(76, 195, 255, 0.5),
+        box-shadow:
+          0 0 0 1px rgba(76, 195, 255, 0.5),
           0 0 10px rgba(76, 195, 255, 0.9);
       }
 
@@ -220,7 +236,9 @@
         padding-left: 16px;
       }
 
-      #infoPanel li { margin-bottom: 2px; }
+      #infoPanel li {
+        margin-bottom: 2px;
+      }
 
       #loadingOverlay {
         position: absolute;
@@ -260,7 +278,9 @@
         color: var(--muted);
       }
 
-      #loadingOverlay .status { font-size: 13px; }
+      #loadingOverlay .status {
+        font-size: 13px;
+      }
 
       #loadingOverlay .bar {
         margin-top: 4px;
@@ -276,18 +296,17 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          var(--accent),
-          transparent
-        );
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
         animation: loading-bar 1.4s linear infinite;
       }
 
       @keyframes loading-bar {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
       }
     </style>
   </head>
@@ -298,12 +317,7 @@
 
       <div id="toolbar">
         <div class="group">
-          <button
-            id="specsPreviewBtn"
-            class="tool-btn primary"
-            type="button"
-            disabled
-          >
+          <button id="specsPreviewBtn" class="tool-btn primary" type="button">
             <span class="dot"></span>
             Specs Preview
           </button>
@@ -354,7 +368,10 @@
         <h2>Navigation &amp; Modes</h2>
         <ul>
           <li>Mouse: Left‑drag orbit, right‑drag pan, scroll to zoom.</li>
-          <li>Test your own videos: Load specs‑optimized videos for the corresponding screens. You do not have to fill all screens.</li>
+          <li>
+            Default: Loader‑Videos laufen auf allen Screens. Buttons schalten
+            Specs / Example / eigene Videos.
+          </li>
         </ul>
       </div>
 
@@ -418,7 +435,7 @@
 
       function goToSweetspotBack() {
         camera.position.set(-689.68, 185.28, 671.48);
-        controls.target.set(-4.40, 82.51, 1.90);
+        controls.target.set(-4.4, 82.51, 1.9);
         controls.update();
       }
 
@@ -426,17 +443,6 @@
       hemiLight.position.set(0, 1, 0);
       scene.add(hemiLight);
 
-      /*  const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-      dirLight.position.set(300, 600, 200);
-      dirLight.castShadow = true;
-      dirLight.shadow.mapSize.set(2048, 2048);
-      const d = 1200;
-      dirLight.shadow.camera.left = -d;
-      dirLight.shadow.camera.right = d;
-      dirLight.shadow.camera.top = d;
-      dirLight.shadow.camera.bottom = -d;
-      scene.add(dirLight);
-      */
       const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
       fillLight.position.set(-600, 400, -500);
       scene.add(fillLight);
@@ -576,11 +582,41 @@
         floor: { video: null, texture: null, url: null, isUser: true }
       };
 
+      const loaderVideos = {
+        inner: { video: null, texture: null },
+        outer: { video: null, texture: null },
+        floor: { video: null, texture: null }
+      };
+
       let activeVideoEntries = [];
       let isUsingVideos = false;
       let syncIntervalId = null;
 
       const LUMINOSITY_DEFAULT = 0.14;
+
+      function createLoopingVideoTexture(src) {
+        const video = document.createElement("video");
+        video.src = src;
+        video.loop = true;
+        video.muted = true;
+        video.preload = "auto";
+        video.playsInline = true;
+
+        const texture = new THREE.VideoTexture(video);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+        texture.flipY = false;
+
+        return { video, texture };
+      }
+
+      function initLoaderVideos() {
+        loaderVideos.inner = createLoopingVideoTexture("models/loader_inside.mp4");
+        loaderVideos.outer = createLoopingVideoTexture("models/loader_outside.mp4");
+        loaderVideos.floor = createLoopingVideoTexture("models/loader_floor.mp4");
+      }
 
       function handleUserVideoUpload(slot, input) {
         const file = input.files && input.files[0];
@@ -676,7 +712,9 @@
           const video = entry.video;
           const tex = entry.videoTexture;
 
-          try { video.currentTime = 0; } catch (e) {}
+          try {
+            video.currentTime = 0;
+          } catch (e) {}
 
           try {
             const p = video.play();
@@ -701,6 +739,71 @@
         if (isUsingVideos) startSyncMonitor();
       }
 
+      async function switchToLoaderVideos() {
+        if (!model) return;
+
+        stopSyncMonitor();
+        stopAndDisposeVideos();
+
+        const pendingEntries = [];
+
+        model.traverse((child) => {
+          if (!child.isMesh || !child.material) return;
+          const mats = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+
+          for (const mat of mats) {
+            const matName = (mat.name || "").toLowerCase();
+            const meshName = (child.name || "").toLowerCase();
+
+            if (
+              loaderVideos.inner.video &&
+              (matName.startsWith("portal_inside_specs") ||
+                meshName.includes("portal_inside_specs"))
+            ) {
+              pendingEntries.push({
+                mat,
+                video: loaderVideos.inner.video,
+                videoTexture: loaderVideos.inner.texture,
+                isUser: false
+              });
+            } else if (
+              loaderVideos.outer.video &&
+              (matName.startsWith("portal_outside_specs") ||
+                meshName.includes("portal_outside_specs"))
+            ) {
+              pendingEntries.push({
+                mat,
+                video: loaderVideos.outer.video,
+                videoTexture: loaderVideos.outer.texture,
+                isUser: false
+              });
+            } else if (
+              loaderVideos.floor.video &&
+              (matName.startsWith("portal_floor_specs") ||
+                meshName.includes("portal_floor_specs"))
+            ) {
+              pendingEntries.push({
+                mat,
+                video: loaderVideos.floor.video,
+                videoTexture: loaderVideos.floor.texture,
+                isUser: false
+              });
+            }
+          }
+        });
+
+        if (!pendingEntries.length) {
+          switchBackToSpecs();
+          return;
+        }
+
+        await activateVideoEntries(pendingEntries);
+        updateButtonsForLoaderMode();
+        loadingOverlay.classList.add("hidden");
+      }
+
       async function switchToUserVideos() {
         if (!model) return;
 
@@ -713,7 +816,7 @@
           (userVideos.floor && userVideos.floor.video);
 
         if (!hasAnyUserVideo) {
-          updateButtonsForSpecsMode();
+          updateButtonsForLoaderMode();
           return;
         }
 
@@ -767,7 +870,7 @@
         });
 
         if (!pendingEntries.length) {
-          updateButtonsForSpecsMode();
+          updateButtonsForLoaderMode();
           return;
         }
 
@@ -815,19 +918,7 @@
 
             const videoUrl = `models/${baseName}.mp4`;
 
-            const video = document.createElement("video");
-            video.loop = true;
-            video.muted = true;
-            video.playsInline = true;
-            video.preload = "auto";
-            video.src = videoUrl;
-
-            const texture = new THREE.VideoTexture(video);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.generateMipmaps = false;
-            texture.flipY = false;
+            const { video, texture } = createLoopingVideoTexture(videoUrl);
 
             pendingEntries.push({
               mat,
@@ -839,7 +930,7 @@
         });
 
         if (!pendingEntries.length) {
-          updateButtonsForSpecsMode();
+          updateButtonsForLoaderMode();
           return;
         }
 
@@ -852,7 +943,7 @@
         stopAndDisposeVideos();
 
         if (!model) {
-          updateButtonsForSpecsMode();
+          updateButtonsForLoaderMode();
           loadingOverlay.classList.add("hidden");
           return;
         }
@@ -909,22 +1000,32 @@
         updateButtonsForSpecsMode();
       }
 
+      function updateButtonsForLoaderMode() {
+        specsPreviewBtn.disabled = false;
+        exampleVideoBtn.disabled = false;
+        applyPreviewBtn.disabled = false;
+        specsPreviewBtn.classList.remove("primary");
+      }
+
       function updateButtonsForSpecsMode() {
         specsPreviewBtn.disabled = true;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = false;
+        specsPreviewBtn.classList.add("primary");
       }
 
       function updateButtonsForExampleMode() {
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = true;
         applyPreviewBtn.disabled = false;
+        specsPreviewBtn.classList.remove("primary");
       }
 
       function updateButtonsForUserMode() {
         specsPreviewBtn.disabled = false;
         exampleVideoBtn.disabled = false;
         applyPreviewBtn.disabled = true;
+        specsPreviewBtn.classList.remove("primary");
       }
 
       specsPreviewBtn.addEventListener("click", () => {
@@ -962,7 +1063,8 @@
           setupModel(model);
           window.model = model;
 
-          switchBackToSpecs();
+          initLoaderVideos();
+          switchToLoaderVideos();
         },
         undefined,
         (error) => {
