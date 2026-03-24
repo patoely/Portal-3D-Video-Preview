@@ -945,24 +945,19 @@ function applyLogoTexture() {
   logoTex.colorSpace = THREE.SRGBColorSpace;
   logoTex.flipY = false;
 
-  model.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
-    const mats = Array.isArray(child.material)
-      ? child.material
-      : [child.material];
+  const mesh1 = model.getObjectByName("Mesh_1");
+  const mesh2 = model.getObjectByName("Mesh_2");
 
-    for (const mat of mats) {
-      const name = (mat.name || "").toLowerCase();
-      if (name === "Logo1" || name === "Logo2") {
-        mat.map = logoTex;
-        mat.emissiveMap = logoTex;
-        mat.emissive = new THREE.Color(0xffffff);
-        mat.emissiveIntensity = 0.5;
-        mat.needsUpdate = true;
-      }
-    }
+  [mesh1, mesh2].forEach((mesh) => {
+    if (!mesh) return;
+    mesh.material.map = logoTex;
+    mesh.material.emissiveMap = logoTex;
+    mesh.material.emissive = new THREE.Color(0xffffff);
+    mesh.material.emissiveIntensity = 0.5;
+    mesh.material.needsUpdate = true;
   });
 }
+
 
       function switchBackToSpecs() {
         stopSyncMonitor();
