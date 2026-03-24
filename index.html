@@ -937,7 +937,8 @@
         await activateVideoEntries(pendingEntries);
         updateButtonsForExampleMode();
       }
-function applyLogoTexture() {
+
+      function applyLogoTexture() {
   if (!model) return;
 
   const texLoader = new THREE.TextureLoader();
@@ -969,6 +970,7 @@ function applyLogoTexture() {
     }
   );
 }
+
 
 
 
@@ -1091,24 +1093,24 @@ function applyLogoTexture() {
 
       loadingStatus.textContent = "Loading model…";
       gltfLoader.load(
-        "Portal_mapped.glb",
-        (gltf) => {
-          model = gltf.scene;
-          setupModel(model);
-          window.model = model;
-             applyLogoTexture();
+  "Portal_mapped.glb",
+  (gltf) => {
+    model = gltf.scene;
+    setupModel(model);
+    window.model = model;
 
-          initLoaderVideos();
-          switchToLoaderVideos();
-        
+    applyLogoTexture();  // ← kein Timeout nötig, Textur wird im Callback angewendet
 
+    initLoaderVideos();
+    switchToLoaderVideos();
+  },
+  undefined,
+  (error) => {
+    console.error("GLB load error", error);
+    loadingStatus.textContent = "Error loading model.";
+  }
+);
 
-        undefined,
-        (error) => {
-          console.error("GLB load error", error);
-          loadingStatus.textContent = "Error loading model.";
-        }
-      );
     </script>
   </body>
 </html>
