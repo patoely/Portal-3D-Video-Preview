@@ -953,7 +953,7 @@ function applyLogoTexture() {
 
     for (const mat of mats) {
       const name = (mat.name || "").toLowerCase();
-      if (name === "logo1" || name === "logo2") {
+      if (name === "Logo1" || name === "Logo2") {
         mat.map = logoTex;
         mat.emissiveMap = logoTex;
         mat.emissive = new THREE.Color(0xffffff);
