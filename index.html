@@ -1083,10 +1083,13 @@ function applyLogoTexture() {
           model = gltf.scene;
           setupModel(model);
           window.model = model;
-          applyLogoTexture();
+       
 
           initLoaderVideos();
           switchToLoaderVideos();
+          setTimeout(() => {
+      applyLogoTexture();
+    }, 500);
         },
         undefined,
         (error) => {
