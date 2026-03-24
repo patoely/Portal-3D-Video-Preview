@@ -941,22 +941,35 @@ function applyLogoTexture() {
   if (!model) return;
 
   const texLoader = new THREE.TextureLoader();
-  const logoTex = texLoader.load("models/Ocean_logo_TEX.png");
-  logoTex.colorSpace = THREE.SRGBColorSpace;
-  logoTex.flipY = false;
+  texLoader.load(
+    "models/Ocean_logo_TEX.png",
+    (logoTex) => {
+      // Callback – wird erst aufgerufen wenn Textur wirklich geladen ist
+      logoTex.colorSpace = THREE.SRGBColorSpace;
+      logoTex.flipY = false;
+      logoTex.needsUpdate = true;
 
-  const mesh1 = model.getObjectByName("Mesh_1");
-  const mesh2 = model.getObjectByName("Mesh_2");
+      const m1 = model.getObjectByName("Mesh_1");
+      const m2 = model.getObjectByName("Mesh_2");
 
-  [mesh1, mesh2].forEach((mesh) => {
-    if (!mesh) return;
-    mesh.material.map = logoTex;
-    mesh.material.emissiveMap = logoTex;
-    mesh.material.emissive = new THREE.Color(0xffffff);
-    mesh.material.emissiveIntensity = 0.5;
-    mesh.material.needsUpdate = true;
-  });
+      [m1, m2].forEach((mesh) => {
+        if (!mesh) return;
+        mesh.material.map = logoTex;
+        mesh.material.emissiveMap = null;
+        mesh.material.emissive = new THREE.Color(0x000000);
+        mesh.material.emissiveIntensity = 0.0;
+        mesh.material.needsUpdate = true;
+      });
+
+      console.log("Logo-Textur geladen und angewendet");
+    },
+    undefined,
+    (err) => {
+      console.error("Logo-Textur konnte nicht geladen werden:", err);
+    }
+  );
 }
+
 
 
       function switchBackToSpecs() {
@@ -1083,14 +1096,13 @@ function applyLogoTexture() {
           model = gltf.scene;
           setupModel(model);
           window.model = model;
-       
+             applyLogoTexture();
 
           initLoaderVideos();
           switchToLoaderVideos();
-          setTimeout(() => {
-      applyLogoTexture();
-    }, 500);
-        },
+        
+
+
         undefined,
         (error) => {
           console.error("GLB load error", error);
