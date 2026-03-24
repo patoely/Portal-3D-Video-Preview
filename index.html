@@ -938,14 +938,13 @@
         updateButtonsForExampleMode();
       }
 
-      function applyLogoTexture() {
+function applyLogoTexture() {
   if (!model) return;
 
   const texLoader = new THREE.TextureLoader();
   texLoader.load(
     "models/Ocean_logo_TEX.png",
     (logoTex) => {
-      // Callback – wird erst aufgerufen wenn Textur wirklich geladen ist
       logoTex.colorSpace = THREE.SRGBColorSpace;
       logoTex.flipY = false;
       logoTex.needsUpdate = true;
@@ -956,20 +955,16 @@
       [m1, m2].forEach((mesh) => {
         if (!mesh) return;
         mesh.material.map = logoTex;
-        mesh.material.emissiveMap = null;
-        mesh.material.emissive = new THREE.Color(0x000000);
-        mesh.material.emissiveIntensity = 0.0;
+        mesh.material.emissiveMap = logoTex;
+        mesh.material.emissive = new THREE.Color(0xffffff);
+        mesh.material.emissiveIntensity = 1.0;
+        mesh.material.transparent = false;
         mesh.material.needsUpdate = true;
       });
-
-      console.log("Logo-Textur geladen und angewendet");
-    },
-    undefined,
-    (err) => {
-      console.error("Logo-Textur konnte nicht geladen werden:", err);
     }
   );
 }
+
 
 
 
