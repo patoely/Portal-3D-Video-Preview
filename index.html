@@ -937,6 +937,32 @@
         await activateVideoEntries(pendingEntries);
         updateButtonsForExampleMode();
       }
+function applyLogoTexture() {
+  if (!model) return;
+
+  const texLoader = new THREE.TextureLoader();
+  const logoTex = texLoader.load("models/Ocean_logo_TEX.png");
+  logoTex.colorSpace = THREE.SRGBColorSpace;
+  logoTex.flipY = false;
+
+  model.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    for (const mat of mats) {
+      const name = (mat.name || "").toLowerCase();
+      if (name === "logo1" || name === "logo2") {
+        mat.map = logoTex;
+        mat.emissiveMap = logoTex;
+        mat.emissive = new THREE.Color(0xffffff);
+        mat.emissiveIntensity = 0.5;
+        mat.needsUpdate = true;
+      }
+    }
+  });
+}
 
       function switchBackToSpecs() {
         stopSyncMonitor();
@@ -1062,6 +1088,7 @@
           model = gltf.scene;
           setupModel(model);
           window.model = model;
+          applyLogoTexture();
 
           initLoaderVideos();
           switchToLoaderVideos();
